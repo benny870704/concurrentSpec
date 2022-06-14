@@ -1,8 +1,11 @@
 import unittest
-from scenario import Scenario
+import sys
+sys.path.append("../")
+from src.scenario import Scenario
 
 class TestScheduledSprinkling(unittest.TestCase):
-    def test_sprinklers(self):
+    
+    def test_scheduled_sprinkling(self):
         scenario = Scenario("scheduled sprinkling")
 
         scenario.Given("water supply is normal")\
@@ -16,5 +19,7 @@ class TestScheduledSprinkling(unittest.TestCase):
                 .execute()
 
 if __name__ == '__main__':
+    if len(sys.argv) > 1:
+        TestScheduledSprinkling.STEP_PATH = sys.argv.pop()
     unittest.main()
     
