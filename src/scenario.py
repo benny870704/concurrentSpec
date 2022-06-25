@@ -11,9 +11,10 @@ from .step import Step
 GLOBAL_ERROR = []
 
 def __excepthook__(args):
-    traceback.print_exc()
+    traceback_message = traceback.format_exc() + "\n"
+
     global GLOBAL_ERROR
-    GLOBAL_ERROR.append(args)
+    GLOBAL_ERROR.append((traceback_message, args))
 
 threading.excepthook = __excepthook__
 
@@ -21,7 +22,7 @@ def is_file_empty(file_name):
     return os.path.isfile(file_name) and os.path.getsize(file_name) == 0
 
 class Scenario:
-    def __init__(self, name="scenario", groups=None, step_path="./steps/"):
+    def __init__(self, name="scenario", step_path="./steps/", groups=None):
         self.name = name
         self.groups = [] if groups == None else groups
         self.step_path = step_path if step_path.endswith("/") else step_path+"/"
@@ -97,12 +98,12 @@ class Scenario:
         
         return self
 
-    # def full_text(self):
-    #     full_text = "Scenario: " + self.name + "\n"
-    #     for text, description in self.groups:
-    #         full_text += "  " + text + " " + description + "\n"
-
-    #     return full_text
+    def full_text(self):
+        full_text = "\n\033[1;34mScenario: " + self.name + "\033[0m\n"
+        for group in self.groups:
+            for step in group:
+                full_text += "\033[0;34m  " + step.step + "\033[0m " + step.description + "\n"
+        print(full_text, end = "")
 
     def execute(self):
         import_path = str.replace(str.replace(self.step_path, "./", ""), "/", ".")
@@ -114,27 +115,31 @@ class Scenario:
         self.steps_object = steps_class()
 
         print("") # make a line break
+        self.full_text()
+        
         for group in self.groups:
             thread_list = [Thread(target=getattr(self.steps_object, step.function_name), name=step.description, kwargs=step.kwargs) for step in group]
             self.all_done = False
             for t in thread_list:
-                print(t.name + " start")
+                # print(t.name + " start")
                 t.start()
-                
+
             while thread_list:
                 for t in thread_list[:]:
                     if not t.is_alive():
                         t.join()
-                        print(t.name + " end")
+                        # print(t.name + " end")
                         thread_list.remove(t)
             
             global GLOBAL_ERROR
             if GLOBAL_ERROR:
+                traceback_message = ""
                 error_message = ""
-                for exception in GLOBAL_ERROR:
+                for traceback, exception in GLOBAL_ERROR:
+                    traceback_message += traceback
                     error_message += f"    {exception.exc_type.__name__} from step: {exception.thread.getName()},\n\
     error message: {exception.exc_value}\n\n"
                 GLOBAL_ERROR.clear()
-                raise RuntimeError("Error(s) in the group:\n\n" + error_message)
-            print("---------------------------------")
+                raise RuntimeError(traceback_message + "\n\033[1;31mError(s) in the group:\n\n\033[0;31m" + error_message + "\033[0m")
+            # print("---------------------------------")
             

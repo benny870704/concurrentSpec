@@ -19,7 +19,5 @@ class TestScheduledSprinkling(unittest.TestCase):
                 .execute()
 
 if __name__ == '__main__':
-    if len(sys.argv) > 1:
-        TestScheduledSprinkling.STEP_PATH = sys.argv.pop()
     unittest.main()
     

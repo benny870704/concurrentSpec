@@ -35,7 +35,7 @@ class TestArgument(unittest.TestCase):
     def test_multiple_keyword_arguments_at_one_step(self):
         scenario = Scenario("add operation")
 
-        scenario.Given("I have two numbers with keyword arguments", number1=3, number2=4)\
+        scenario.Given("I have two numbers", number1=3, number2=4)\
                 \
                 .When("I add the two numbers")\
                 \

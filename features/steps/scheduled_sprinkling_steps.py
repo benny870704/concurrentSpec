@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from features.src.sprinkler_controller import SprinklerController
 from features.src.sprinkler import Sprinkler
 
-SPRINKLER_WAITING_MESSAGE_TIME = [1.5, 4, 2.5]
+SPRINKLER_WAITING_MESSAGE_TIME = [5.2, 3.8, 5.2]
 
 class ScheduledSprinklingSteps:
     

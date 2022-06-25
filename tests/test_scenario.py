@@ -1,7 +1,7 @@
 import unittest
 import sys
 sys.path.append("../")
-from io import StringIO
+import io
 from src.scenario import Scenario
 
 class TestScenario(unittest.TestCase):
@@ -65,8 +65,24 @@ class TestScenario(unittest.TestCase):
         with self.assertRaises(RuntimeError) as e:
             scenario.Given("a precondition")\
                     .execute()
-                    
-        self.assertEqual("Error(s) in the group:\n\n    NotImplementedError from step: a precondition,\n    error message: given_a_precondition\n\n", str(e.exception))
+
+        self.assertTrue("Traceback (most recent call last):\n" in str(e.exception)) 
+        self.assertTrue("\n\033[1;31mError(s) in the group:\n\n\033[0;31m    NotImplementedError from step: a precondition,\n    error message: given_a_precondition\n\n\033[0m" in str(e.exception))
+
+    def test_full_text(self):
+        capturedOutput = io.StringIO()
+        sys.stdout = capturedOutput
+        scenario = Scenario("Print full text")
+
+        scenario.Given("I'm Given.")\
+                .And("I'm an And after Given.")\
+                .When("I'm When.")\
+                .Then("I'm Then.")\
+                .But("I'm a But after Then.")\
+                .full_text()
+
+        sys.stdout = sys.__stdout__
+        self.assertEqual("\n\033[1;34mScenario: Print full text\033[0m\n\033[0;34m  Given\033[0m I'm Given.\n\033[0;34m  And\033[0m I'm an And after Given.\n\033[0;34m  When\033[0m I'm When.\n\033[0;34m  Then\033[0m I'm Then.\n\033[0;34m  But\033[0m I'm a But after Then.\n", capturedOutput.getvalue())
 
 if __name__ == '__main__':
     unittest.main()

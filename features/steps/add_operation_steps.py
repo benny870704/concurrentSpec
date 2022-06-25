@@ -27,7 +27,4 @@ class AddOperationSteps:
         self.number1 = number1
         self.number2 = number2
 
-    def given_i_have_two_numbers_with_keyword_arguments(self, number1, number2):
-        self.number1 = number1
-        self.number2 = number2
 
