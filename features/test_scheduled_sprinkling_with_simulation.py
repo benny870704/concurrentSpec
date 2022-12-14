@@ -3,10 +3,10 @@ import sys
 sys.path.append("../")
 from src.scenario import Scenario
 
-class TestScheduledSprinkling(unittest.TestCase):
+class TestScheduledSprinklingWithSimulation(unittest.TestCase):
     
     def test_scheduled_sprinkling(self):
-        scenario = Scenario("scheduled sprinkling")
+        scenario = Scenario("scheduled sprinkling with simulation")
 
         scenario.Given("three sprinklers A, B, and C")\
                 .Given("the scheduled time is set to 4:00:00 am")\
@@ -18,4 +18,3 @@ class TestScheduledSprinkling(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-    

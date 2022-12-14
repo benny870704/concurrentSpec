@@ -1,4 +1,4 @@
-class AddOperationSteps:
+class AddOperation:
 
     def __init__(self):
         pass

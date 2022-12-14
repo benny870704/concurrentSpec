@@ -1,12 +1,19 @@
 # concurrentSpec
-- put `scenario.py` in your project folder
+- put `src/` folder in your project folder
+    - `src/` folder include `scenario.py`, `sequential_group.py`, `step.py`
 
-## Scenario Usage
+## Section
+- [Scenario Usage](###scenario-usage)
+- [Keyword Aruguments](###keyword-arguments)
+- [Continue After Failure](###continue-after-failure)
+- [Running Example Scenario](###running-example-scenario)
+
+### Scenario Usage
 - Each scenario can be written under the Python `unittest` framework
 - Remember to include `scenario` depending on the location
 - The example can be found in `features` folder
 - To execute the example, command `cd features`, `python -m unittest`
-- The default step definition will generate to the path `<your_execution_path>/steps/<scenario_name>Steps.py`
+- The default step definition will generate to the path `<your_execution_path>/steps/<scenario_name>.py`
   - It can give custom step definition file path in scenario initialization by `step_path=<path>`
     ```python 
     scenario = Scenario("add operation", step_path="./add_operation_steps/")
@@ -15,49 +22,48 @@
 - Scenario Example:
     ```python
     class TestScheduledSprinkling(unittest.TestCase):
-        
-        def test_scheduled_sprinkling(self):
-            scenario = Scenario("scheduled sprinkling")
+    
+    def test_scheduled_sprinkling(self):
+        scenario = Scenario("scheduled sprinkling")
 
-            scenario.Given("water supply is normal")\
-                    .And("timer is set to 4:00:00 am")\
-                    \
-                    .When("the time is 4:00:00 am")\
-                    \
-                    .Then("sprinkler A emits water no later than 4:00:05 am")\
-                    .And("sprinkler B emits water no later than 4:00:05 am")\
-                    .And("sprinkler C emits water no later than 4:00:05 am")\
-                    .execute()
+        scenario.Given("three sprinklers A, B, and C")\
+                .Given("the scheduled time is set to 4:00:00 am")\
+                .When("the time is 4:00:00 am")\
+                .Then("sprinkler A should emit water within 5 seconds")\
+                .And("sprinkler B should emit water within 5 seconds")\
+                .And("sprinkler C should emit water within 5 seconds")\
+                .execute()
     ```
   - `scenario = Scenario("scheduled sprinkling")`: scenario initialization and scenario name
   - `Given()`, `When()`, `Then()`, `And()`, `But()`: step definition in the scenario
   - `execute()`: execute the scenario
-  - default step definition ```<your_execution_path>/steps/<scenario_name>Steps.py)```:
+  - default step definition ```<your_execution_path>/steps/<scenario_name>.py)```:
     ```python
-    class ScheduledSprinklingSteps:
+    class ScheduledSprinkling:
 
       def __init__(self):
           pass
 
-      def given_water_supply_is_normal(self):
-          raise NotImplementedError('given_water_supply_is_normal')
+      def given_three_sprinklers_a_b_and_c(self):
+          raise NotImplementedError('given_three_sprinklers_a_b_and_c')
 
-      def given_timer_is_set_to_4_00_00_am(self):
-          raise NotImplementedError('given_timer_is_set_to_4_00_00_am')
+      def given_the_scheduled_time_is_set_to_4_00_00_am(self):
+          raise NotImplementedError('given_the_scheduled_time_is_set_to_4_00_00_am')
 
       def when_the_time_is_4_00_00_am(self):
           raise NotImplementedError('when_the_time_is_4_00_00_am')
 
-      def then_sprinkler_a_emits_water_no_later_than_4_00_05_am(self):
-          raise NotImplementedError('then_sprinkler_a_emits_water_no_later_than_4_00_05_am')
+      def then_sprinkler_a_should_emit_water_within_5_seconds(self):
+          raise NotImplementedError('then_sprinkler_a_should_emit_water_within_5_seconds')
 
-      def then_sprinkler_b_emits_water_no_later_than_4_00_05_am(self):
-          raise NotImplementedError('then_sprinkler_b_emits_water_no_later_than_4_00_05_am')
+      def then_sprinkler_b_should_emit_water_within_5_seconds(self):
+          raise NotImplementedError('then_sprinkler_b_should_emit_water_within_5_seconds')
 
-      def then_sprinkler_c_emits_water_no_later_than_4_00_05_am(self):
-          raise NotImplementedError('then_sprinkler_c_emits_water_no_later_than_4_00_05_am')
+      def then_sprinkler_c_should_emit_water_within_5_seconds(self):
+          raise NotImplementedError('then_sprinkler_c_should_emit_water_within_5_seconds')
     ```
 
+### Keyword Arguments
 - Each step can give keyword arguments
   - Example:
     ```python
@@ -84,7 +90,7 @@
 
     - Step Definition:
     ```python
-    class AddOperationSteps:
+    class AddOperation:
 
     def __init__(self):
         pass
@@ -99,3 +105,25 @@
         raise NotImplementedError('then_the_sum_should_be_equal_to')
         
     ```
+
+### Continue After Failure 
+- Each step can set `continue_after_failure` as `true`, which default is `false` 
+- If `continue_after_failure` is `true`, the scenario will continue the execution no matter the step failed or not.
+    - Example:
+    ```python
+    scenario = Scenario("emergency braking and warning over normal requests")
+    
+    scenario.Given("an outstanding request for the lift to visit a floor")\
+            .When("an emergency has been detected")\
+            .Then("the lift is stopped at the nearest floor in the direction of travel")\
+            .And("the emergency indicator is turned on", continue_after_failure=True)\
+            .And("the request is canceled", continue_after_failure=True)\
+            .Then("the lift doors are open within 5 seconds")\
+            .execute()
+    ```
+
+### Running Example Scenario
+- `cd features/`
+    - run `python3 test_scheduled_sprinkling.py` for sprinkler example
+    - run `python3 test_lift_emergency.py` for lift example
+    - run `python3 -m unittest` to see all examples
