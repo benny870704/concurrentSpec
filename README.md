@@ -107,18 +107,18 @@
     ```
 
 ### Continue After Failure 
-- Each step can set `continue_after_failure` as `true`, which default is `false` 
-- If `continue_after_failure` is `true`, the scenario will continue the execution no matter the step failed or not.
+- Each step can set `continue_after_failure` as `true`, which default is `False` 
+- If `continue_after_failure` is `True`, the scenario will continue the execution no matter the step failed or not.
     - Example:
     ```python
     scenario = Scenario("emergency braking and warning over normal requests")
-    
+        
     scenario.Given("an outstanding request for the lift to visit a floor")\
             .When("an emergency has been detected")\
             .Then("the lift is stopped at the nearest floor in the direction of travel")\
-            .And("the emergency indicator is turned on", continue_after_failure=True)\
-            .And("the request is canceled", continue_after_failure=True)\
-            .Then("the lift doors are open within 5 seconds")\
+            .And("the emergency indicator should be turned on", continue_after_failure=True)\
+            .And("the request should be canceled", continue_after_failure=True)\
+            .Then("the lift doors should be open within 5 seconds")\
             .execute()
     ```
 

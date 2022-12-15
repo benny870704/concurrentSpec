@@ -14,12 +14,12 @@ class EmergencyBrakingAndWarningOverNormalRequests:
     def then_the_lift_is_stopped_at_the_nearest_floor_in_the_direction_of_travel(self):
         assert self.lift.is_stopped_at_a_floor() is True
 
-    def then_the_emergency_indicator_is_turned_on(self):
+    def then_the_emergency_indicator_should_be_turned_on(self):
         assert self.lift.is_warning_given() is True
 
-    def then_the_request_is_canceled(self):
+    def then_the_request_should_be_canceled(self):
         assert self.lift.is_request_canceled() is True
 
-    def then_the_lift_doors_are_open_within_5_seconds(self):
+    def then_the_lift_doors_should_be_open_within_5_seconds(self):
         assert self.lift.is_doors_open() is True
 
