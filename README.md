@@ -107,8 +107,9 @@
     ```
 
 ### Continue After Failure 
-- Each step can set `continue_after_failure` as `true`, which default is `False` 
-- If `continue_after_failure` is `True`, the scenario will continue the execution no matter the step failed or not.
+- The default value of `continue_after_failure` is `False`.
+- Only steps in **Then** group can set `continue_after_failure` as `True`; otherwise it will be ignored.
+- If `continue_after_failure` is `true`, the scenario will continue the execution no matter the step failed or not.
     - Example:
     ```python
     scenario = Scenario("emergency braking and warning over normal requests")
