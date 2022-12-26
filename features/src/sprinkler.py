@@ -13,4 +13,3 @@ class Sprinkler:
 
     def check_emitting_water(self):
         return self.is_emitting_water
-

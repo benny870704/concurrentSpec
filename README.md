@@ -3,10 +3,12 @@
     - `src/` folder include `scenario.py`, `sequential_group.py`, `step.py`
 
 ## Section
-- [Scenario Usage](#scenario-usage)
-- [Keyword Aruguments](#keyword-arguments)
-- [Continue After Failure](#continue-after-failure)
-- [Running Example Scenario](#running-example-scenario)
+- [concurrentSpec](#concurrentspec)
+  - [Section](#section)
+    - [Scenario Usage](#scenario-usage)
+    - [Keyword Arguments](#keyword-arguments)
+    - [Continue After Failure](#continue-after-failure)
+    - [Running Example Scenario](#running-example-scenario)
 
 ### Scenario Usage
 - Each scenario can be written under the Python `unittest` framework
@@ -68,9 +70,7 @@
     ```python
     Scenario("add operation")\
     .Given("I have two numbers", number1=3, number2=4)\
-    \
     .When("I add the two numbers")\
-    \
     .Then("The sum should be equal to", answer=7)\
     .execute()
     ```

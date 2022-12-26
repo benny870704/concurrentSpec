@@ -38,47 +38,42 @@ class TestScenario(unittest.TestCase):
         self.assertEqual("given_process_b_is_running", scenario.get_groups()[0].get_all_steps()[1].get_function_name())
 
     def test_given_should_not_appear_after_a_when(self):
-        scenario = Scenario()
-        
         with self.assertRaises(ValueError) as e:
-            scenario.When("something happens")\
-                    .Given("a precondition")
+            Scenario()\
+            .When("something happens")\
+            .Given("a precondition")
 
         self.assertEqual("Given: out of place", str(e.exception))
 
     def test_given_should_not_appear_after_a_then(self):
-        scenario = Scenario()
-        
         with self.assertRaises(ValueError) as e:
-            scenario.Then("some outcomes")\
-                    .Given("a precondition")
+            Scenario()\
+            .Then("some outcomes")\
+            .Given("a precondition")
 
         self.assertEqual("Given: out of place", str(e.exception))
 
     def test_and_should_not_appear_without_any_leading_step(self):
-        scenario = Scenario()
-        
         with self.assertRaises(ValueError) as e:
-            scenario.And("a condition")
+            Scenario()\
+            .And("a condition")
                     
         self.assertEqual("And: must not be the first clause", str(e.exception))
 
     def test_but_should_not_appear_without_any_leading_step(self):
-        scenario = Scenario()
-        
         with self.assertRaises(ValueError) as e:
-            scenario.But("a condition")
+            Scenario()\
+            .But("a condition")
                     
         self.assertEqual("But: must not be the first clause", str(e.exception))
 
     def test_step_default_definition_should_throw_runtime_error(self):
-        scenario = Scenario()
-        
         capturedOutput = io.StringIO()
         sys.stdout = capturedOutput
         with self.assertRaises(RuntimeError) as e:
-            scenario.Given("a precondition")\
-                    .execute()
+            Scenario()\
+            .Given("a precondition")\
+            .execute()
         sys.stdout = sys.__stdout__
 
         self.assertTrue("Traceback (most recent call last):\n" in str(e.exception)) 
@@ -87,14 +82,14 @@ class TestScenario(unittest.TestCase):
     def test_full_text(self):
         capturedOutput = io.StringIO()
         sys.stdout = capturedOutput
-        scenario = Scenario("Print full text")
 
-        scenario.Given("I'm Given.")\
-                .And("I'm an And after Given.")\
-                .When("I'm When.")\
-                .Then("I'm Then.")\
-                .But("I'm a But after Then.")\
-                .full_text()
+        Scenario("Print full text")\
+        .Given("I'm Given.")\
+        .And("I'm an And after Given.")\
+        .When("I'm When.")\
+        .Then("I'm Then.")\
+        .But("I'm a But after Then.")\
+        .full_text()
 
         sys.stdout = sys.__stdout__
         self.assertEqual("\n\033[1;34mScenario: Print full text\033[0m\n\033[0;34m  Given\033[0m I'm Given.\n\033[0;34m  And\033[0m I'm an And after Given.\n\033[0;34m  When\033[0m I'm When.\n\033[0;34m  Then\033[0m I'm Then.\n\033[0;34m  But\033[0m I'm a But after Then.\n", capturedOutput.getvalue())
@@ -102,15 +97,15 @@ class TestScenario(unittest.TestCase):
     def test_continuing_execution_on_a_step(self):
         capturedOutput = io.StringIO()
         sys.stdout = capturedOutput
-        scenario = Scenario("Continuing execution at a specific step")
 
         with self.assertRaises(RuntimeError) as e:
-            scenario.Given("Some precondition")\
-                    .When("An event happens")\
-                    .Then("The step is true")\
-                    .And("The step fails but it adds a tag to continue execution", continue_after_failure=True)\
-                    .Then("The step should be executed and it fails")\
-                    .execute()
+            Scenario("Continuing execution at a specific step")\
+            .Given("Some precondition")\
+            .When("An event happens")\
+            .Then("The step is true")\
+            .And("The step fails but it adds a tag to continue execution", continue_after_failure=True)\
+            .Then("The step should be executed and it fails")\
+            .execute()
 
         sys.stdout = sys.__stdout__
         self.assertTrue("\n\033[1;31mError(s) in the group:\n\n\033[0;31m    AssertionError from step: The step fails but it adds a tag to continue execution\n\n\n\033[0m" in str(e.exception))

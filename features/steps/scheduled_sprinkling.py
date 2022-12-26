@@ -33,3 +33,4 @@ class ScheduledSprinkling:
     def then_sprinkler_c_should_emit_water_within_5_seconds(self):
         wait(self.sprinkler_c.check_emitting_water, timeout_seconds=5)
         assert self.sprinkler_controller.get_clock_time() - self.sprinkler_controller.get_scheduled_time() <= timedelta(seconds=5), "sprinkler C timeout"
+

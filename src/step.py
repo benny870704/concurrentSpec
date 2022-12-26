@@ -28,4 +28,3 @@ class Step:
             if self.method_name not in whole_class_text:
                 f.write(f"    def {self.method_name}(self{keywords_arguments}):\n        raise NotImplementedError(\"{self.method_name}\")\n\n")
                 f.close()
-        
