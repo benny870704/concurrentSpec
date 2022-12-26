@@ -16,7 +16,7 @@
 - The default step definition will generate to the path `<your_execution_path>/steps/<scenario_name>.py`
   - It can give custom step definition file path in scenario initialization by `step_path=<path>`
     ```python 
-    scenario = Scenario("add operation", step_path="./add_operation_steps/")
+    Scenario("add operation", step_path="./add_operation_steps/")
     ```
 
 - Scenario Example:
@@ -24,17 +24,16 @@
     class TestScheduledSprinkling(unittest.TestCase):
     
     def test_scheduled_sprinkling(self):
-        scenario = Scenario("scheduled sprinkling")
-
-        scenario.Given("three sprinklers A, B, and C")\
-                .Given("the scheduled time is set to 4:00:00 am")\
-                .When("the time is 4:00:00 am")\
-                .Then("sprinkler A should emit water within 5 seconds")\
-                .And("sprinkler B should emit water within 5 seconds")\
-                .And("sprinkler C should emit water within 5 seconds")\
-                .execute()
+        Scenario("scheduled sprinkling")\
+        .Given("three sprinklers A, B, and C")\
+        .Given("the scheduled time is set to 4:00:00 am")\
+        .When("the time is 4:00:00 am")\
+        .Then("sprinkler A should emit water within 5 seconds")\
+        .And("sprinkler B should emit water within 5 seconds")\
+        .And("sprinkler C should emit water within 5 seconds")\
+        .execute()
     ```
-  - `scenario = Scenario("scheduled sprinkling")`: scenario initialization and scenario name
+  - `Scenario("scheduled sprinkling")`: scenario initialization and scenario name
   - `Given()`, `When()`, `Then()`, `And()`, `But()`: step definition in the scenario
   - `execute()`: execute the scenario
   - default step definition ```<your_execution_path>/steps/<scenario_name>.py)```:
@@ -67,14 +66,13 @@
 - Each step can give keyword arguments
   - Example:
     ```python
-    scenario = Scenario("add operation")
-
-    scenario.Given("I have two numbers", number1=3, number2=4)\
-            \
-            .When("I add the two numbers")\
-            \
-            .Then("The sum should be equal to", answer=7)\
-            .execute()
+    Scenario("add operation")\
+    .Given("I have two numbers", number1=3, number2=4)\
+    \
+    .When("I add the two numbers")\
+    \
+    .Then("The sum should be equal to", answer=7)\
+    .execute()
     ```
 
     > **Warning**
@@ -83,9 +81,8 @@
     > 
     > Example:
     >   ```python
-    >  scenario = Scenario("add operation")
-    >
-    >  scenario.Given("I have two numbers", 3, 4)
+    >  Scenario("add operation")\
+    >  .Given("I have two numbers", 3, 4)
     >  ```
 
     - Step Definition:
@@ -112,15 +109,14 @@
 - If `continue_after_failure` is `true`, the scenario will continue the execution no matter the step failed or not.
     - Example:
     ```python
-    scenario = Scenario("emergency braking and warning over normal requests")
-        
-    scenario.Given("an outstanding request for the lift to visit a floor")\
-            .When("an emergency has been detected")\
-            .Then("the lift is stopped at the nearest floor in the direction of travel")\
-            .And("the emergency indicator should be turned on", continue_after_failure=True)\
-            .And("the request should be canceled", continue_after_failure=True)\
-            .Then("the lift doors should be open within 5 seconds")\
-            .execute()
+    Scenario("emergency braking and warning over normal requests")\
+    .Given("an outstanding request for lift to visit a floor")\
+    .When("an emergency has been detected")\
+    .Then("lift is stopped at nearest floor in direction of travel")\
+    .And("emergency indicator should be turned on", continue_after_failure=True)\
+    .And("request should be canceled", continue_after_failure=True)\
+    .Then("lift doors should be open within 5 seconds")\
+    .execute()
     ```
 
 ### Running Example Scenario
