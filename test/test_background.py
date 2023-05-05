@@ -4,11 +4,11 @@ import os.path
 import unittest
 import traceback
 from pathlib import Path
-sys.path.append("../../")
-from concurrentSpec.src.scenario import Scenario
-from concurrentSpec.src.scenario_outline import ScenarioOutline
-from concurrentSpec.src.background import Background
-from concurrentSpec.src.feature import Feature, FeatureManager
+sys.path.append("../")
+from src.scenario import Scenario
+from src.scenario_outline import ScenarioOutline
+from src.background import Background
+from src.feature import Feature, FeatureManager
 
 class TestBackground(unittest.TestCase):
     def setUp(self):

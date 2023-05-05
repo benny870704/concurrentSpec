@@ -1,7 +1,7 @@
 import io, sys, unittest, traceback, threading
 from pathlib import Path
 from anytree import Node, PreOrderIter, RenderTree
-from concurrentSpec.src.feature import FeatureManager, Feature
+from .feature import FeatureManager, Feature
 from .scenario import Scenario
 from .step import Step
 from .sequential_group import SequentialGroup

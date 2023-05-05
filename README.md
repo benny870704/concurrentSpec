@@ -9,6 +9,8 @@
     - [Keyword Arguments](#keyword-arguments)
     - [Continue After Failure](#continue-after-failure)
     - [Running Example Scenario](#running-example-scenario)
+  - [System Scenario](#system-scenario)
+
 
 ### Scenario Usage
 - Each scenario can be written under the Python `unittest` framework
@@ -124,3 +126,9 @@
     - run `python3 test_scheduled_sprinkling.py` for sprinkler example
     - run `python3 test_lift_emergency.py` for lift example
     - run `python3 -m unittest` to see all examples
+
+
+## System Scenario
+- Run Example: 
+  - `cd examples/example_7_system_scenario/system`
+  - `python3 -m unittest`

@@ -2,7 +2,7 @@ import re, traceback, threading
 import shutil
 from pathlib import Path
 from anytree import PreOrderIter, Node
-from concurrentSpec.src.feature import FeatureManager
+from .feature import FeatureManager
 from .system_scenario import SystemScenario
 from .scenario import Scenario
 from .execute_state import ExecuteState
