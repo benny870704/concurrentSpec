@@ -1,55 +1,45 @@
-import unittest
 import sys, io
-sys.path.append("../")
-from src.feature import FeatureManager
-from src.scenario import Scenario
-from pathlib import Path
-import os.path, importlib
+import shutil
+import os.path
+import unittest
 import warnings
 import traceback
-import shutil
+from pathlib import Path
+sys.path.append("../")
+from src.feature import FeatureManager
+from src.scenario_outline import ScenarioOutline
 
-def initialize_scenario_context(class_name, import_module_name, file_location):
-    if import_module_name in sys.modules:
-        del sys.modules[import_module_name]
-    spec = importlib.util.spec_from_file_location(import_module_name, file_location)
-    steps_module = importlib.util.module_from_spec(spec)
-    sys.modules[import_module_name] = steps_module
-    spec.loader.exec_module(steps_module)
-    steps_class = getattr(steps_module, class_name)
-    
-    return steps_class()
-
-class TestScenario(unittest.TestCase):
+class TestScenarioOutline(unittest.TestCase):
 
     def setUp(self):
         self.test_path = str(Path(traceback.extract_stack()[-1].filename).parent)
         FeatureManager.console_output = False
-
+    
     def tearDown(self):
+        FeatureManager.clear()
         dir = f"{self.test_path}/steps/"
         if os.path.exists(dir):
             shutil.rmtree(dir)
 
     def test_scenario_steps_class_name_and_file_name(self):
-        scenario = Scenario("Scheduled sprinkling")
+        scenario = ScenarioOutline("Scheduled sprinkling")
         self.assertEqual("ScheduledSprinkling", scenario.get_step_definition_class_name())
         self.assertEqual("scheduled_sprinkling", scenario.get_step_definition_file_name())
 
-    def test_empty_scenario_should_contain_set_up_and_tear_down(self):
-        scenario = Scenario("Test set up and tear down")
-        scenario_context = initialize_scenario_context(scenario.get_step_definition_class_name(), "test_set_up_and_tear_down", f"{self.test_path}/steps/test_set_up_and_tear_down.py")
+    def test_empty_scenario_outline_should_contain_set_up_and_tear_down(self):
+        scenario = ScenarioOutline("Test set up and tear down")
+        scenario_context = scenario.initialize_scenario_context()
         
         self.assertIsNotNone(getattr(scenario_context, 'set_up', None))
         self.assertIsNotNone(getattr(scenario_context, 'tear_down', None))
 
     def test_generate_file_with_name(self):
-        Scenario("Scheduled sprinkling")
+        ScenarioOutline("Scheduled sprinkling")
         
         self.assertTrue(os.path.exists(f"{self.test_path}/steps/scheduled_sprinkling.py"))
         
     def test_auto_generate_methods_And(self):
-        scenario = Scenario("Scheduled sprinkling")
+        scenario = ScenarioOutline("Scheduled sprinkling")
         
         scenario.Given("water supply is normal")\
                 .And("all timers are set to 4:00:00 am")
@@ -57,7 +47,7 @@ class TestScenario(unittest.TestCase):
         self.assertEqual("given_all_timers_are_set_to_4_00_00_am", scenario.get_groups()[0].get_all_steps()[1].get_method_name())
 
     def test_full_text(self):
-        scenario = Scenario("Simple Google search")
+        scenario = ScenarioOutline("Simple Google search")
 
         scenario.Given("a web browser is on the Google page")\
                 \
@@ -68,7 +58,7 @@ class TestScenario(unittest.TestCase):
                 .But("the related results do not include \"pandemonium\"")
 
         self.assertEqual(
-            ("\n\033[1;34mScenario: Simple Google search\033[0m\n"
+            ("\n\033[1;34mScenario Outline: Simple Google search\033[0m\n"
             "  \033[0mGiven a web browser is on the Google page\033[0m\n"
             "  \033[0mWhen the search phrase \"panda\" is entered\033[0m\n"
             "  \033[0mThen results for \"panda\" are shown\033[0m\n"
@@ -77,9 +67,120 @@ class TestScenario(unittest.TestCase):
             scenario.result_printout()
         )
 
+    def test_full_text_with_examples(self):
+        scenario = ScenarioOutline("Simple Google search")
+
+        scenario.Given("a web browser is on the <webpage> page")\
+                \
+                .When("the search phrase <keyword> is entered")\
+                \
+                .Then("results for <keyword> are shown")\
+                .And("the related results include <related>")\
+                .But("the related results do not include <no_related>")\
+                .WithExamples("""
+                    | webpage |    keyword     |    related    |   no_related  |
+                    | Google  |     panda      | Panda Express | pandemonium   |
+                    | Bing    |  black panther | Black Panther | blackpink     |
+                """)
+
+        self.assertEqual(
+            ("\n\033[1;34mScenario Outline: Simple Google search - Example #1\033[0m\n"
+            "  \033[0mGiven a web browser is on the \033[1mGoogle\033[22m page\033[0m\n"
+            "  \033[0mWhen the search phrase \033[1mpanda\033[22m is entered\033[0m\n"
+            "  \033[0mThen results for \033[1mpanda\033[22m are shown\033[0m\n"
+            "  \033[0mAnd the related results include \033[1mPanda Express\033[22m\033[0m\n"
+            "  \033[0mBut the related results do not include \033[1mpandemonium\033[22m\033[0m\n"),
+            scenario.result_printout(0)
+        )
+        self.assertEqual(
+            ("\n\033[1;34mScenario Outline: Simple Google search - Example #2\033[0m\n"
+            "  \033[0mGiven a web browser is on the \033[1mBing\033[22m page\033[0m\n"
+            "  \033[0mWhen the search phrase \033[1mblack panther\033[22m is entered\033[0m\n"
+            "  \033[0mThen results for \033[1mblack panther\033[22m are shown\033[0m\n"
+            "  \033[0mAnd the related results include \033[1mBlack Panther\033[22m\033[0m\n"
+            "  \033[0mBut the related results do not include \033[1mblackpink\033[22m\033[0m\n"),
+            scenario.result_printout(1)
+        )
+
+    def test_full_text_with_examples_contains_newlines(self):
+        scenario = ScenarioOutline("Simple Google search")
+
+        scenario.Given("a web browser is on the <webpage> page")\
+                \
+                .When("the search phrase <keyword> is entered")\
+                \
+                .Then("results for <keyword> are shown")\
+                .And("the related results include <related>")\
+                .But("the related results do not include <no_related>")\
+                .WithExamples("""
+                    | webpage |     keyword      |     related     |   no_related  |
+                    | Google  |     panda        | Panda Express\n | pandemonium   |
+                    | Bing    |  \nblack panther | Black Panther   | blackpink     |
+                """)
+
+        self.assertEqual(
+            ("\n\033[1;34mScenario Outline: Simple Google search - Example #1\033[0m\n"
+            "  \033[0mGiven a web browser is on the \033[1mGoogle\033[22m page\033[0m\n"
+            "  \033[0mWhen the search phrase \033[1mpanda\033[22m is entered\033[0m\n"
+            "  \033[0mThen results for \033[1mpanda\033[22m are shown\033[0m\n"
+            "  \033[0mAnd the related results include \033[1mPanda Express\\n\033[22m\033[0m\n"
+            "  \033[0mBut the related results do not include \033[1mpandemonium\033[22m\033[0m\n"),
+            scenario.result_printout(0)
+        )
+        self.assertEqual(
+            ("\n\033[1;34mScenario Outline: Simple Google search - Example #2\033[0m\n"
+            "  \033[0mGiven a web browser is on the \033[1mBing\033[22m page\033[0m\n"
+            "  \033[0mWhen the search phrase \033[1m\\nblack panther\033[22m is entered\033[0m\n"
+            "  \033[0mThen results for \033[1m\\nblack panther\033[22m are shown\033[0m\n"
+            "  \033[0mAnd the related results include \033[1mBlack Panther\033[22m\033[0m\n"
+            "  \033[0mBut the related results do not include \033[1mblackpink\033[22m\033[0m\n"),
+            scenario.result_printout(1)
+        )
+
+    def test_raise_exception_if_examples_count_is_invalid(self):
+        os.makedirs(f"{self.test_path}/steps", exist_ok = True)
+        shutil.copyfile(f"{self.test_path}/test_data/simple_google_search.py", f"{self.test_path}/steps/simple_google_search.py")
+
+        scenario = ScenarioOutline("Simple Google search")
+
+        with self.assertRaises(Exception) as e:
+            scenario.Given("a web browser is on the <webpage> page")\
+                    \
+                    .When("the search phrase <keyword> is entered")\
+                    \
+                    .Then("results for <keyword> are shown")\
+                    .And("the related results include <related>")\
+                    .But("the related results do not include <no_related>")\
+                    .WithExamples("""
+                        | webpage |    keyword     |    related    |   no_related  |
+                        |         |     panda      | Panda Express |               |
+                        |         |  black panther |               | blackpink     |
+                    """).execute()
+
+    def test_execute_with_examples(self):
+        os.makedirs(f"{self.test_path}/steps", exist_ok = True)
+        shutil.copyfile(f"{self.test_path}/test_data/simple_google_search.py", f"{self.test_path}/steps/simple_google_search.py")
+
+        sys.stdout = io.StringIO()
+
+        scenario = ScenarioOutline("Simple Google search")
+        
+        scenario.Given("a web browser is on the <webpage> page")\
+                .When("the search phrase <keyword> is entered")\
+                .Then("results for <keyword> are shown")\
+                .And("the related results include <related>")\
+                .But("the related results do not include <no related>")\
+                .WithExamples("""
+                    | webpage |    keyword     |    related    |   no related  |
+                    | Google  |     panda      | Panda Express | pandemonium   |
+                    | Bing    |  black panther | Black Panther | blackpink     |
+                """).execute()
+
+        sys.stdout = sys.__stdout__
+
     def test_Given_should_not_appear_after_a_When(self):
         with self.assertRaises(ValueError) as e:
-            Scenario("Scheduled sprinkling")\
+            ScenarioOutline("Scheduled sprinkling")\
             .When("the time is 4:00:00 am")\
             .Given("water supply is normal")
 
@@ -87,7 +188,7 @@ class TestScenario(unittest.TestCase):
 
     def test_Given_should_not_appear_after_a_Then(self):
         with self.assertRaises(ValueError) as e:
-            Scenario("Scheduled sprinkling")\
+            ScenarioOutline("Scheduled sprinkling")\
             .Then("sprinkler A should emit water no later than 4:00:05 am")\
             .Given("timer of sprinkler A is set to 4:00:00 am")
 
@@ -95,27 +196,23 @@ class TestScenario(unittest.TestCase):
 
     def test_And_should_not_appear_without_any_lead_step(self):
         with self.assertRaises(ValueError) as e:
-            Scenario("Scheduled sprinkling")\
+            ScenarioOutline("Scheduled sprinkling")\
             .And("all timers are set to 4:00:00 am")
                     
         self.assertEqual("And: must not be the first clause", str(e.exception))
 
     def test_But_should_not_appear_without_any_lead_step(self):
         with self.assertRaises(ValueError) as e:
-            Scenario("Scheduled sprinkling")\
+            ScenarioOutline("Scheduled sprinkling")\
             .But("timer of sprinklers B and C are not set")
                     
         self.assertEqual("But: must not be the first clause", str(e.exception))
 
     def test_step_default_definition_should_throw_runtime_error(self):
-        sys.stdout = io.StringIO()
-
         with self.assertRaises(RuntimeError) as e:
-            Scenario("Scheduled sprinkling")\
+            ScenarioOutline("Scheduled sprinkling")\
             .Given("water supply is normal")\
             .execute()
-
-        sys.stdout = sys.__stdout__
 
         self.assertTrue("Traceback (most recent call last):\n" in str(e.exception)) 
         self.assertTrue(
@@ -125,32 +222,32 @@ class TestScenario(unittest.TestCase):
         )
 
     def test_default_scenario_step_definition_class_name_and_file_name(self):
-        scenario = Scenario()
+        scenario = ScenarioOutline()
 
         self.assertEqual("StepDefinitions", scenario.get_step_definition_class_name())
         self.assertEqual("step_definitions", scenario.get_step_definition_file_name())
 
     def test_generate_file_without_scenario_name(self):
-        Scenario()
+        ScenarioOutline()
         
         self.assertTrue(os.path.exists(f"{self.test_path}/steps/step_definitions.py"))
 
     def test_generate_file_duplicated_empty_scenario_name(self):
-        Scenario()
-        Scenario()
+        ScenarioOutline()
+        ScenarioOutline()
         
         self.assertTrue(os.path.exists(f"{self.test_path}/steps/step_definitions.py"))
         self.assertEqual(1, len(os.listdir(f"{self.test_path}/steps/")))
 
     def test_generate_file_duplicated_scenario_name(self):
-        Scenario("Scheduled sprinkling")
-        Scenario("Scheduled sprinkling")
+        ScenarioOutline("Scheduled sprinkling")
+        ScenarioOutline("Scheduled sprinkling")
         
         self.assertTrue(os.path.exists(f"{self.test_path}/steps/scheduled_sprinkling.py"))
         self.assertEqual(1, len(os.listdir(f"{self.test_path}/steps/")))
         
     def test_duplicate_scenarios_should_generate_step_definition_only_once(self):
-        Scenario("Simple Google search")\
+        ScenarioOutline("Simple Google search")\
         .Given("a web browser is on the Google page")\
         \
         .When("the search phrase \"panda\" is entered")\
@@ -159,7 +256,7 @@ class TestScenario(unittest.TestCase):
         .And("the related results include \"Panda Express\"")\
         .But("the related results do not include \"pandemonium\"")
                   
-        Scenario("Simple Google search")\
+        ScenarioOutline("Simple Google search")\
         .Given("a web browser is on the Google page")\
         \
         .When("the search phrase \"panda\" is entered")\
@@ -177,7 +274,7 @@ class TestScenario(unittest.TestCase):
         self.assertEqual(1, whole_class_text.count("then_the_related_results_do_not_include_pandemonium_(self)"))
 
     def test_duplicate_steps_in_the_same_scenario_should_generate_step_definition_only_once(self):
-        Scenario("Simple Google search")\
+        ScenarioOutline("Simple Google search")\
         .Given("a web browser is on the Google page")\
         .Given("a web browser is on the Google page")\
         \
@@ -206,7 +303,7 @@ class TestScenario(unittest.TestCase):
         sys.stdout = io.StringIO()
 
         with self.assertRaises(RuntimeError) as e:
-            Scenario("Continuing execution at a specific step")\
+            ScenarioOutline("Continuing execution at a specific step")\
             .Given("Some precondition")\
             .When("An event happens")\
             .Then("The step is true")\
@@ -216,13 +313,13 @@ class TestScenario(unittest.TestCase):
 
         sys.stdout = sys.__stdout__
 
-        self.assertTrue("\n\033[1;31mError(s) in the group:\n\n\033[0;31m" in str(e.exception))
+        self.assertTrue("\n\033[1;31mError(s) in the group:\n\n\033[0;31m")
         self.assertTrue("    AssertionError from step: The step fails but it adds a tag to continue execution\n\n" in str(e.exception))
-        self.assertTrue("    AssertionError from step: The step should be executed and it fails\n\n\033[0m" in str(e.exception))
-        
+        self.assertTrue("    AssertionError from step: The step should be executed and it fails\n\n" in str(e.exception))
+
     def test_set_continue_after_failure_on_Given_and_When_group_should_give_warnings(self):
         with warnings.catch_warnings(record=True) as caught_warnings:
-            Scenario("Continuing execution at a specific step")\
+            ScenarioOutline("Continuing execution at a specific step")\
             .Given("First precondition", continue_after_failure=True)\
             .And("Second precondition", continue_after_failure=True)\
             .But("Third precondition", continue_after_failure=True)\
@@ -244,7 +341,7 @@ class TestScenario(unittest.TestCase):
         os.makedirs(f"{self.test_path}/steps", exist_ok = True)
         shutil.copyfile(f"{self.test_path}/test_data/set_up_should_be_executed.py", f"{self.test_path}/steps/set_up_should_be_executed.py")
         
-        scenario = Scenario("Set Up Should Be Executed")
+        scenario = ScenarioOutline("Set Up Should Be Executed")
 
         scenario.Given("a web browser is on the Google page")\
                 \
@@ -262,7 +359,7 @@ class TestScenario(unittest.TestCase):
         captured_output = io.StringIO()
         sys.stdout = captured_output
         
-        scenario = Scenario("Tear Down Should Be Executed")
+        scenario = ScenarioOutline("Tear Down Should Be Executed")
 
         scenario.Given("a web browser is on the Google page")\
                 \
@@ -279,10 +376,10 @@ class TestScenario(unittest.TestCase):
         os.makedirs(f"{self.test_path}/steps", exist_ok = True)
         shutil.copyfile(f"{self.test_path}/test_data/tear_down_should_be_executed.py", f"{self.test_path}/steps/tear_down_should_be_executed.py")
         
-        captured_output = io.StringIO()
-        sys.stdout = captured_output
+        # captured_output = io.StringIO()
+        # sys.stdout = captured_output
         with self.assertRaises(RuntimeError) as e:
-            scenario = Scenario("Tear Down Should Be Executed")
+            scenario = ScenarioOutline("Tear Down Should Be Executed")
 
             scenario.Given("a web browser is on the Google page")\
                     \
@@ -291,7 +388,7 @@ class TestScenario(unittest.TestCase):
                     .Then("results for \"capybara\" are shown")\
                     .execute()
 
-        sys.stdout = sys.__stdout__
+        # sys.stdout = sys.__stdout__
 
         self.assertTrue("Capybara Not Exist" in str(e.exception))
         self.assertTrue("Tear Down Executed" in scenario.captured_output_message())

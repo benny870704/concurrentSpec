@@ -1,0 +1,256 @@
+/* Global Styles */
+* {
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: #f2f2f2;
+    font-size: 16px;
+}
+
+header {
+    background-color: #333;
+    color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 60px;
+}
+
+h1 {
+    font-size: 24px;
+}
+
+main {
+    padding: 20px;
+    padding-left: 10%;
+    padding-right: 10%;
+}
+
+#bar {
+    height: 20px;
+    background-color: #BD0A2B;
+    position: relative;
+}
+
+#bar .green {
+    height: 100%;
+    background-color: green;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+#bar .center-text {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    transform: translateX(-50%);
+    line-height: 20px;
+    color: white;
+}
+
+.feature-list {
+    list-style: none;
+    margin-top: 20px;
+}
+
+.feature-list li {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    padding: 20px;
+}
+
+.feature-list li h2 {
+    font-size: 20px;
+    margin-bottom: 10px;
+}
+
+.feature-list li h2 span {
+    font-size: 16px;
+    font-weight: normal;
+    color: #777;
+}
+
+.test-result {
+    border-top: 1px solid #ddd;
+    margin-top: 10px;
+    padding-top: 10px;
+}
+
+.scenario-list {
+    list-style: none;
+    margin-left: 20px;
+}
+
+.scenario-list li {
+    font-size: 16px;
+    margin-bottom: 5px;
+}
+
+.scenario-list li.passed {
+    color: #090;
+}
+
+.scenario-list li.failed {
+    color: #c00;
+}
+
+.scenario-list li .scenario-name {
+    cursor: pointer;
+}
+
+.scenario-list li .steps {
+    /* display: none; */
+    overflow: hidden;
+}
+
+.scenario-list table {
+    margin-top: 0.5em;
+}
+
+.scenario-list td {
+    padding: 0.25em 0.5em;
+}
+
+.scenario-list td .example-traceback-message-row {
+    padding-right: 0em;
+    padding-left: 0em;
+}
+
+.scenario-list td:first-child {
+    width: 0.5em;
+}
+
+.scenario-list tr td:nth-child(2) {
+    width: 4em;
+}
+
+.scenario-list tr td:last-child {
+    width: auto;
+    text-align: left;
+}
+
+.scenario-list tr td strong {
+    font-weight: bold;
+    color: blue;
+}
+
+.doc-string {
+    color: darkcyan;
+}
+
+.data-table td {
+    border-left: #333 solid 2px;
+    text-align: center;
+    font-weight: lighter;
+    color: #46A3FF;
+    white-space: nowrap;
+}
+
+.tag {
+    color: green;
+    background-color: #e6ffe6;
+}
+
+.example-table td {
+    text-align: center;
+    font-weight: lighter;
+    color: #46A3FF;
+    white-space: nowrap;
+}
+
+.example-table td:not(:first-child, .example-traceback-message-row) {
+    border-left: #333 solid 2px;
+}
+
+.example-table .example-table-header{
+    font-weight: bold;
+}
+
+.traceback-message-block {
+    background-color: rgb(255, 233, 233);
+    color: #BD0A2B;
+    font-size: 16px;
+    font-weight: normal;
+}
+
+.traceback-message {
+    padding: 1em;
+}
+
+.failed {
+    color: red;
+    background-color: #ffe6e6;
+}
+
+.passed {
+    color: green;
+    background-color: #e6ffe6;
+}
+
+.steps {
+    margin: 0;
+    padding-left: 1em;
+}
+
+.feature-table {
+    border-collapse: collapse;
+    margin-top: 20px;
+    width: 100%;
+}
+
+.feature-table th,
+.feature-table td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: center;
+}
+
+.feature-table th {
+    background-color: #eee;
+}
+
+.feature-table tr:nth-child(even) {
+    background-color: #fff;
+}
+
+.feature-table tr:nth-child(odd) {
+    background-color: #f2f2f2;
+}
+
+.feature-table td:nth-child(2),
+.feature-table td:nth-child(3),
+.feature-table td:nth-child(4) {
+    font-weight: bold;
+}
+
+.feature-table td:nth-child(2),
+.feature-table td:nth-child(3) {
+    color: green;
+}
+
+.feature-table td:nth-child(4) {
+    color: red;
+}
+
+.feature_title {
+    margin: 0px;
+    padding: 5px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    text-align: left;
+    cursor: pointer;
+    font-family: 'Arial';
+    font-size: larger;
+    font-weight: bold;
+}
+
+.feature_description {
+    padding: 10px;
+}

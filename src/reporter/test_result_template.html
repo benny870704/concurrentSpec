@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Feature Test Results</title>
+    <style>
+      {{styles}}
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Feature Test Results</h1>
+    </header>
+    <main>
+      {{bar}}
+      <table class="feature-table">
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th>Total Scenarios</th>
+            <th>Scenarios Passed</th>
+            <th>Scenarios Failed</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{features_table}}
+        </tbody>
+      </table>
+  
+      <ul class="feature-list">
+        {{features}}
+      </ul>
+    </main>
+  </body>
+</html>
