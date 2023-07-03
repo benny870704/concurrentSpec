@@ -12,8 +12,8 @@ UNDEFINED_SYMBOL = "❓"
 
 OUTPUT_FILE = "test_result/test_result.html"
 
-def generate_test_result_in_html():
-    print("generating test result...")
+def generate_test_result_in_html(output_file=None):
+    print("generating html test result...")
     style = pathlib.Path(f"{os.path.dirname(__file__)}/test_result_html.css").read_text()
     template = pathlib.Path(os.path.join(os.path.dirname(__file__), "test_result_template.html")).read_text()
     template = re.sub(r'(?<=\n)\s*{{styles}}', style, template)
@@ -21,10 +21,14 @@ def generate_test_result_in_html():
     template = re.sub(r'(?<=\n)\s*{{features_table}}', add_result_table(), template)
     template = re.sub(r'(?<=\n)\s*{{features}}', add_features(), template)
     
-    os.makedirs(f'{os.getcwd()}/test_result', exist_ok=True)
-    if os.path.exists(OUTPUT_FILE): os.remove(OUTPUT_FILE)
-    with open(OUTPUT_FILE, 'w') as f:
-        f.write(template)
+    if output_file:
+        os.makedirs(os.path.dirname(output_file), exist_ok=True)
+        with open(output_file, 'w') as f:
+            f.write(template)
+    else:
+        os.makedirs(f'test_result/', exist_ok=True)
+        with open(OUTPUT_FILE, 'w') as f:
+            f.write(template)
     print("done!")
 
 def spaces(count):
@@ -115,7 +119,7 @@ def add_background(background):
                 background_text += f"{spaces(space_count_standard+4)}<tr>\n"
                 background_text += f"{spaces(space_count_standard+6)}<td></td>\n"
                 background_text += f"{spaces(space_count_standard+6)}<td colspan=\"2\"><div class=\"traceback-message-block\"><div class=\"traceback-message\">"
-                background_text += background.traceback_messages + "</div></div></td>\n"
+                background_text += background.traceback_messages.strip().replace("\n", "<br>").replace("  ", "&nbsp;&nbsp;") + "</div></div></td>\n"
             
             background_text += f"{spaces(space_count_standard+4)}</tr>\n"
 
@@ -137,12 +141,13 @@ def add_scenario(feature_name, scenario):
             """.rstrip(' ')
 
             if step.execution_result == Status.failed:
+                traceback_messages = scenario.traceback_messages.strip().replace("\n", "<br>").replace("  ", "&nbsp;&nbsp;")
                 scenario_text += f"""
                   <tr>
                     <td></td>
                     <td colspan=\"2\">
                       <div class=\"traceback-message-block\">
-                        <div class=\"traceback-message\">{scenario.traceback_messages}
+                        <div class=\"traceback-message\">{traceback_messages}
                         </div>
                       </div>
                     </td>
@@ -226,7 +231,7 @@ def add_examples(scenario):
             example_text += f"{spaces(space_count_standard+6)}</tr>\n"
         else:
             example_status = scenario.example_execution_result[index-1]["execution_result"]
-            example_traceback_messages = scenario.example_execution_result[index-1]["traceback_messages"]
+            example_traceback_messages = scenario.example_execution_result[index-1]["traceback_messages"].strip().replace("\n", "<br>").replace("  ", "&nbsp;&nbsp;")
             example_status_symbol = get_status_symbol(example_status)
             
             example_text += f"{spaces(space_count_standard+6)}<tr>\n"

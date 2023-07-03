@@ -1,4 +1,4 @@
-import time, threading, traceback
+import time, threading, traceback, inspect
 from .status import Status
 from .execute_state import ExecuteState
 
@@ -42,12 +42,18 @@ class SequentialGroup:
         if isinstance(scenario_context, dict):
             for step, domain_name_and_scenario_name in self.step_to_domain_name_and_scenario_name.items():
                 if step.executed != ExecuteState.SKIP:
-                    thread_list.append(threading.Thread(target=getattr(scenario_context[domain_name_and_scenario_name], step.method_name), name=step.description, kwargs=step.kwargs))
+                    step_method = getattr(scenario_context[domain_name_and_scenario_name], step.method_name)
+                    params = inspect.signature(step_method).parameters
+                    self.__transfer_params_type_in_kwargs(params, step.kwargs)
+                    thread_list.append(threading.Thread(target=step_method, name=step.description, kwargs=step.kwargs))
                     step.execution_time = time.time()
         else:
             for step in self.concurrent_steps:
                 if step.executed != ExecuteState.SKIP:
-                    thread_list.append(threading.Thread(target=getattr(scenario_context, step.method_name), name=step.description, kwargs=step.kwargs))
+                    step_method = getattr(scenario_context, step.method_name)
+                    params = inspect.signature(step_method).parameters
+                    self.__transfer_params_type_in_kwargs(params, step.kwargs)
+                    thread_list.append(threading.Thread(target=step_method, name=step.description, kwargs=step.kwargs))
                     step.execution_time = time.time()
         
         for t in thread_list:
@@ -63,6 +69,13 @@ class SequentialGroup:
         if self.execution_result != Status.failed: self.execution_result = Status.passed
 
         return GLOBAL_ERROR
+    
+    def __transfer_params_type_in_kwargs(self, expected_params, kwargs):
+        for key in kwargs.keys():
+            if key in expected_params.keys():
+                type = expected_params.get(key).annotation
+                if type == int: kwargs[key] = int(kwargs[key])
+                elif type == float: kwargs[key] = float(kwargs[key])
         
     def __record_step_execution_result(self, step_description):
         step_description_to_exception = {}

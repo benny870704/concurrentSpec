@@ -22,6 +22,6 @@ class ViewShoppingCartContents:
         self.items_info = self.shopping_cart.items_info()
 
     def then_i_should_see_the_following_item_descriptions_(self):
-        assert self.items_info == self.text + "\n"
+        assert self.items_info == self.get_text() + "\n"
 
 

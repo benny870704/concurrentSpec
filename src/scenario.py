@@ -1,17 +1,17 @@
-import io, re
 import time
-import logging
 import textwrap
 import traceback
 from .utils import *
 from .status import Status
 from .feature import FeatureManager
 from .step_container import StepContainer
+from .output_interceptor import OutputInterceptor
 
 class Scenario(StepContainer):
     def __init__(self, scenario_name="", step_definition_folder_path=None, groups=None):
         self.scenario_name = scenario_name
         self.traceback_messages, self.error_messages = "", ""
+        self.set_up_error, self.tear_down_error = "", ""
         self.background_execution_result = {}
         self.execution_result = Status.untested
         self.execution_time = None
@@ -20,7 +20,34 @@ class Scenario(StepContainer):
     def get_scenario_name(self):
         return self.scenario_name
     
-    def result_printout(self, color=True):
+    def full_text(self):
+        full_text, indent, indent_count = "", "  ", 0
+
+        if self.feature_name is not None:
+            if FeatureManager.get_tags_of_feature(self.feature_name):
+                full_text += "".join([f"@{tag} "for tag in FeatureManager.get_tags_of_feature(self.feature_name)])
+            full_text += f"\nFeature: {self.feature_name}\n" 
+            if FeatureManager.get_feature_description(self.feature_name) != "":
+                feature_description = FeatureManager.get_feature_description(self.feature_name)
+                full_text += "\n" + textwrap.indent(textwrap.dedent(feature_description).strip(), "  ") + "\n"
+            indent_count = 1
+
+            if FeatureManager.get_background(self.feature_name) != None:
+                full_text += FeatureManager.get_background(self.feature_name).full_text()
+
+        if FeatureManager.get_tags_of_scenario(self.feature_name, self.scenario_name):
+            full_text += "\n" + indent*indent_count + "".join([f"@{tag} "for tag in FeatureManager.get_tags_of_scenario(self.feature_name, self.scenario_name)])
+        full_text += "\n" + indent*indent_count + "Scenario: " + self.scenario_name + "\n"
+
+        for group in self.sequential_groups:
+            for step in group.get_all_steps():
+                full_text += indent*(indent_count+1) + step.step + " " + step.description + "\n"
+                full_text += indent*(indent_count+2) + "\"\"\"\n" + textwrap.indent(step.doc_string, indent*(indent_count+2)) + "\n" + indent*(indent_count+2) + "\"\"\"\n" if step.doc_string != "" else ""
+                full_text += step.data_table.get_pretty_string(indent=indent*(indent_count+2)) if step.data_table is not None else ""
+
+        return full_text
+    
+    def result_printout(self):
         full_text, indent, indent_count = "", "  ", 0
 
         if self.feature_name is not None:
@@ -35,6 +62,7 @@ class Scenario(StepContainer):
             if FeatureManager.get_background(self.feature_name) != None:
                 full_text += FeatureManager.get_background(self.feature_name).result_printout()
 
+        if self.set_up_error != "": full_text += "\n" + indent*indent_count + self.set_up_error
         if FeatureManager.get_tags_of_scenario(self.feature_name, self.scenario_name):
             full_text += "\n" + indent*indent_count + "".join([f"@{tag} "for tag in FeatureManager.get_tags_of_scenario(self.feature_name, self.scenario_name)])
         full_text += "\n" + indent*indent_count + "\033[1;34mScenario: " + self.scenario_name + "\033[0m\n"
@@ -44,30 +72,35 @@ class Scenario(StepContainer):
                 if step.execution_result == Status.passed: color = "\033[0;32m"
                 elif step.execution_result == Status.failed: color = "\033[0;31m"
                 elif step.execution_result == Status.undefined: color = "\033[0;33m"
-                else: color = "\033[0m"
+                else: color = "\033[90m"
                 full_text += indent*(indent_count+1) + color + step.step + " " + step.description + "\033[0m\n"
                 full_text += indent*(indent_count+2) + "\"\"\"\n" + textwrap.indent(step.doc_string, indent*(indent_count+2)) + "\n" + indent*(indent_count+2) + "\"\"\"\n" if step.doc_string != "" else ""
                 full_text += step.data_table.get_pretty_string(indent=indent*(indent_count+2)) if step.data_table is not None else ""
-
-        ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
-        return full_text if color else ansi_escape.sub('', full_text)
-    
-    def captured_output_message(self):
-        if "captured_output" in dir(self):
-            return "".join([f"    {line}\n" for line in self.captured_output.getvalue().split('\n')])
+                if step.error_message != "" and step.execution_result != Status.undefined:
+                    full_text += textwrap.indent(textwrap.dedent(step.error_message), indent*(indent_count+2))
         
-    def captured_log_message(self):
-        if "log_handler" in dir(self):
-            return "".join([f"    {log}\n" for log in self.log_handler.logs if log != ""])
+        if self.tear_down_error != "": full_text += "\n" + indent*indent_count + self.tear_down_error
+        return full_text
+    
+    def format_output_message(self, message, indent):
+        return "".join([f"{indent}{line}\n" for line in message.split('\n')])
+    
+    def get_output_message(self):
+        return self.captured_output if "captured_output" in dir(self) else ""
+        
+    def format_log_message(self, logs, indent):
+        return "".join([f"{indent}{log}\n" for log in logs if log != ""])
+    
+    def get_log_message(self):
+        return self.captured_logs if "captured_logs" in dir(self) else ""
 
-    def execute(self):
+    def execute(self, skip = None):
+        if skip is not None:
+            return
         runtime_error = None
         start_time = time.time()
-        self.captured_output = io.StringIO()
-        captured_error = io.StringIO()
-        sys.stdout = self.captured_output
-        sys.stderr = captured_error
-        self.log_handler = self.__intercept_log_from_root_logger()
+        output_interceptor = OutputInterceptor()
+        output_interceptor.start(FeatureManager.capture_output, FeatureManager.capture_output, FeatureManager.capture_log)
 
         try:
             scenario_context = self.initialize_scenario_context()
@@ -78,41 +111,21 @@ class Scenario(StepContainer):
         except RuntimeError as e:
             runtime_error = e
 
-        sys.stdout = sys.__stdout__
-        sys.stderr = sys.__stderr__
-        self.__stop_intercept_log()
+        output_interceptor.stop()
         self.execution_time = time.time() - start_time
+        
+        indent = "    " if self.feature_name else "  "
+        self.captured_output = self.format_output_message(output_interceptor.get_captured_output(), indent)
+        self.captured_logs = self.format_log_message(output_interceptor.get_captured_logs(), indent)
         if FeatureManager.console_output:
             print("\n" + self.result_printout(), end = "")
-            if self.captured_output.getvalue() != "":
-                print("\n    Captured Output:\n" + self.captured_output_message())
-            if self.log_handler.logs:
-                print("\n    Log Output:\n" + self.captured_log_message())
-        if runtime_error is not None: raise runtime_error
-
-    def __intercept_log_from_root_logger(self):
-        class CustomLogHandler(logging.Handler):
-            def __init__(self):
-                logging.Handler.__init__(self)
-                self.logs = []
-
-            def emit(self, record):
-                msg = self.format(record)
-                self.logs.append(msg)
-
-        # Remove the default StreamHandler from the root logger
-        root_logger = logging.getLogger()
-        for handler in root_logger.handlers:
-            if isinstance(handler, logging.StreamHandler):
-                root_logger.removeHandler(handler)
-
-        # Create a custom log handler and add it to the root logger
-        custom_handler = CustomLogHandler()
-        logging.getLogger().addHandler(custom_handler)
-        return custom_handler
-    
-    def __stop_intercept_log(self):
-        logging.getLogger().addHandler(logging.StreamHandler())
+            if output_interceptor.get_captured_output() != "":
+                print(f"\n{indent}Captured Output:\n" + self.captured_output)
+            # if output_interceptor.get_captured_error() != "":
+            #     print("\n    Captured Error:\n" + self.format_output_message(output_interceptor.get_captured_error()))
+            if output_interceptor.get_captured_logs():
+                print(f"\n{indent}Log Output:\n" + self.captured_logs)
+        # if runtime_error is not None: raise runtime_error
 
     def __execute_background(self, scenario_context):
         if self.feature_name != None:
@@ -168,6 +181,7 @@ class Scenario(StepContainer):
                 scenario_context.set_up()
             except Exception as e:
                 error_message = f"    {type(e).__name__} from set_up\n\n"
+                self.set_up_error = f"\033[0;31mHOOK-ERROR in Scenario set_up: {type(e).__name__}: {e}\033[0m\n"
                 traceback_message += traceback.format_exc() + "\n"
                 self.traceback_messages += traceback_message
                 self.error_messages += error_message
@@ -180,6 +194,7 @@ class Scenario(StepContainer):
             except Exception as e:
                 self.execution_result = Status.failed
                 error_message = f"    {type(e).__name__} from tear_down\n\n"
+                self.tear_down_error = f"\033[0;31mHOOK-ERROR in Scenario tear_down: {type(e).__name__}: {e}\033[0m\n"
                 traceback_message += traceback.format_exc() + "\n"
                 self.traceback_messages += traceback_message
                 self.error_messages += error_message
@@ -188,17 +203,16 @@ class Scenario(StepContainer):
         self.execution_result = Status.passed
 
     def __inject_doc_string_and_data_table_to_context(self, scenario_context, concurrent_steps):
-        doc_string_count, data_table_count = 0, 0
-        for step in concurrent_steps:
-            if step.doc_string != "": doc_string_count += 1
-            if step.data_table is not None: data_table_count += 1
-        if doc_string_count > 1 or data_table_count > 1: raise Exception("Do not support multiple doc string or data table in concurrent steps.")
-
+        doc_strings, data_tables = {}, {}
         for step in concurrent_steps:
             if step.doc_string != "":
-                scenario_context.__dict__.update({"text": step.doc_string})
+                doc_strings.update({step.method_name: step.doc_string})
             if step.data_table is not None:
-                scenario_context.__dict__.update({"table": step.data_table.to_list_of_dict()})
+                data_tables.update({step.method_name: step.data_table.to_list_of_dict()})
+        scenario_context.__dict__.update({"text": doc_strings})
+        scenario_context.__dict__.update({"table": data_tables})
+        scenario_context.__dict__.update({"get_table": get_table})
+        scenario_context.__dict__.update({"get_text": get_text})
         return scenario_context
     
     def __remove_doc_string_and_data_table_from_context(self, scenario_context):

@@ -2,10 +2,21 @@ import re, traceback, threading
 import shutil
 from pathlib import Path
 from anytree import PreOrderIter, Node
-from .feature import FeatureManager
+from concurrentSpec.src.feature import FeatureManager
 from .system_scenario import SystemScenario
 from .scenario import Scenario
 from .execute_state import ExecuteState
+
+domain_name_and_scenario_outline_name_tuples = []
+
+def SelectScenarioOutline(domain_name: str, scenario_outline_name: str):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            domain_name_and_scenario_outline_name_tuples.append((domain_name, scenario_outline_name))
+            func(*args, **kwargs)
+            return
+        return wrapper
+    return decorator
 
 class SystemScenarioOutline(SystemScenario):
     def __init__(self, system_scenario_name: str):
@@ -23,8 +34,11 @@ class SystemScenarioOutline(SystemScenario):
         if "test_system_scenario" not in str(Path(traceback.extract_stack()[-2].filename)):
             self.add_project_path(str(Path(traceback.extract_stack()[-2].filename).parent.parent) + "/")
         
-    def select_scenario_outline(self, domain_name: str, scenario_name: str):
-        super().select_scenario(domain_name, scenario_name)
+        for domain_name, scenario_outline_name in domain_name_and_scenario_outline_name_tuples:
+            self.SelectScenarioOutline(domain_name, scenario_outline_name)
+        
+    def SelectScenarioOutline(self, domain_name: str, scenario_name: str):
+        super().SelectScenario(domain_name, scenario_name)
         
         return self
     
@@ -113,7 +127,7 @@ class SystemScenarioOutline(SystemScenario):
     
     def __compare_and_execute_step(self, example_index):
         sequential_groups = []
-        
+        when_flag = False
         for step_node in PreOrderIter(self.step_order_tree_root):
             if hasattr(step_node, "step"):
                 high_level_step_keyword = step_node.name
@@ -121,7 +135,8 @@ class SystemScenarioOutline(SystemScenario):
             else:
                 continue
             
-            if step_node.name == "When":
+            if step_node.name == "When" and when_flag is not True:
+                when_flag = True
                 super()._bind_domain_environment_to_system_environment()
                 self.__execute_all_internal_given_step(example_index)
                 if self.error_log != "":

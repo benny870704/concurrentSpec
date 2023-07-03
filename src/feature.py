@@ -1,3 +1,4 @@
+import sys
 import warnings
 
 class __FeatureManager:
@@ -7,6 +8,8 @@ class __FeatureManager:
         self.tag_info = {}
         self.feature_dictionary = {}
         self.console_output = True
+        self.capture_output = True
+        self.capture_log = True
 
     def clear(self):
         self.class_to_feature.clear()
@@ -19,7 +22,9 @@ class __FeatureManager:
             self.class_to_feature.update({class_name: feature_name})
             if class_name not in self.tag_info: self.tag_info[class_name] = {}
         else:
-            raise Exception("Declare more than one feature in a file is not allowed.")
+            # print('Error: Declare more than one feature in a file is not allowed.')
+            # sys.exit()
+            raise RuntimeError("Declare more than one feature in a file is not allowed.")
 
     def __check_scenario_is_in_its_feature(self, scenario) -> bool:
         if scenario.get_scenario_name() == "":
@@ -120,11 +125,13 @@ class __FeatureManager:
             self.tag_info[class_name][method_name]["scenario_names"] = [scenario.get_scenario_name()]
 
     def add_feature(self, feature_name, feature_description, class_name, location):
-        self.__check_feature_is_not_declared_more_than_one(class_name, feature_name)
-        if feature_name not in self.feature_dictionary:
+        if feature_name in self.feature_dictionary:
+            warnings.warn(f"\033[1;93m[WARNING] Feature: {feature_name} has already existed\033[0m", stacklevel=4)
+            # print(f"\n\033[1;93m[WARNING] Feature: {feature_name} has already existed\033[0m", end="")
+        elif feature_name not in self.feature_dictionary:
+            self.__check_feature_is_not_declared_more_than_one(class_name, feature_name)
             self.feature_dictionary[feature_name] = {"location": location, "description": feature_description, "scenarios": [], "background": None}
-        else:
-            warnings.warn(f"\033[1;93m[WARNING] Feature: {feature_name} has already existed\033[0m")
+            
 
 FeatureManager = __FeatureManager()
 

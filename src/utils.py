@@ -2,6 +2,20 @@ import sys, os
 import inspect
 import importlib.util
 
+def get_table():
+    calling_frame = inspect.currentframe()
+    for _ in range(1):
+        calling_frame = calling_frame.f_back
+    method_name = calling_frame.f_code.co_name
+    return calling_frame.f_locals.get('self').table.get(method_name, None)
+
+def get_text():
+    calling_frame = inspect.currentframe()
+    for _ in range(1):
+        calling_frame = calling_frame.f_back
+    method_name = calling_frame.f_code.co_name
+    return calling_frame.f_locals.get('self').text.get(method_name, None)
+
 def is_file_empty(file_name):
     return os.path.isfile(file_name) and os.path.getsize(file_name) == 0
 

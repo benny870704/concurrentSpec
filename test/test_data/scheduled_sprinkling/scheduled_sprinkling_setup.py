@@ -1,4 +1,4 @@
-from test_data.timer import Timer
+from test.test_data.timer import Timer
 
 class ScheduledSprinklingSetup:
 

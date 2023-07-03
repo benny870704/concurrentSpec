@@ -1,13 +1,24 @@
 import io, sys, unittest, traceback, threading
 from pathlib import Path
 from anytree import Node, PreOrderIter, RenderTree
-from .feature import FeatureManager, Feature
+from concurrentSpec.src.feature import FeatureManager, Feature
 from .scenario import Scenario
 from .step import Step
 from .sequential_group import SequentialGroup
 from .selected_scenario import SelectedScenario
 from .execute_state import ExecuteState
 from .custom_test_result import SilentTestResult
+
+domain_name_and_scenario_name_tuples = []
+
+def SelectScenario(domain_name: str, scenario_name: str):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            domain_name_and_scenario_name_tuples.append((domain_name, scenario_name))
+            func(*args, **kwargs)
+            return
+        return wrapper
+    return decorator
 
 class SystemScenario:
     def __init__(self, system_scenario_name: str):
@@ -25,12 +36,15 @@ class SystemScenario:
         if "test_system_scenario" not in str(Path(traceback.extract_stack()[-2].filename)):
             self.add_project_path(str(Path(traceback.extract_stack()[-2].filename).parent.parent) + "/")
         
+        for domain_name, scenario_name in domain_name_and_scenario_name_tuples:
+            self.SelectScenario(domain_name, scenario_name)
+        
     def add_project_path(self, project_path: str):
         self.project_path = project_path        
 
         return self
     
-    def select_scenario(self, domain_name: str, scenario_name: str):
+    def SelectScenario(self, domain_name: str, scenario_name: str):
         sys.stdout.write("\033[?25l") 
         print(f"Selecting {domain_name} domain's scenario...", end="\r")
         sys.stderr = io.StringIO()
@@ -65,10 +79,12 @@ class SystemScenario:
         previous_domain_name_and_scenario_name: tuple = self.__get_the_previous_selected_scenario_under_same_domain((domain_name, scenario_name))
         previous_domain_name = previous_domain_name_and_scenario_name[0]
         previous_domain_steps = self.domain_name_and_scenario_name_tuple_to_selected_scenario.get(previous_domain_name_and_scenario_name).steps
+        previous_domain_then_steps = [step for step in previous_domain_steps if step.lead_step == "Then"]
         current_domain_steps = self.domain_name_and_scenario_name_tuple_to_selected_scenario.get((domain_name, scenario_name)).steps
+        
         for current_domain_step in current_domain_steps:
             if current_domain_step.lead_step == "Given":
-                if current_domain_step.description in [previous_domain_step.description for previous_domain_step in previous_domain_steps]:
+                if current_domain_step.description in [previous_domain_then_step.description for previous_domain_then_step in previous_domain_then_steps]:
                     self.then_given_matching_groups.append({(previous_domain_name, "Then", current_domain_step.description): current_domain_step})
                 else:
                     raise Exception("Multiple scenarios with the same domain are present, where the \"Given\" statement of a later scenario must correspond to one of the \"Then\" statements in the System Scenario.")
@@ -193,7 +209,7 @@ class SystemScenario:
     def _create_scenario_in_system_domain(self):
         FeatureManager.clear()
         feature_name = "system scenario"
-        step_definition_folder_path = self.project_path + "/system/" + "steps/"
+        step_definition_folder_path = self.project_path + "/system/" + "step_definitions/"
         Feature(feature_name = feature_name)
         self.system_scenario = Scenario(scenario_name = self.system_scenario_name, 
                                         step_definition_folder_path = step_definition_folder_path)
@@ -207,6 +223,7 @@ class SystemScenario:
     
     def __compare_and_execute_step(self):
         sequential_groups = []
+        when_flag = False
         
         for step_node in PreOrderIter(self.step_order_tree_root):
             if hasattr(step_node, "step"):
@@ -214,7 +231,9 @@ class SystemScenario:
                 step = step_node.step
             else:
                 continue
-            if step_node.name == "When":
+            
+            if step_node.name == "When" and when_flag is not True:
+                when_flag = True
                 self._bind_domain_environment_to_system_environment()   
                 self.__execute_all_internal_given_step()
                 if self.error_log != "":

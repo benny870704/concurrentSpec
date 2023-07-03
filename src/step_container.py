@@ -10,6 +10,7 @@ from .feature import FeatureManager
 from .sequential_group import SequentialGroup
 
 STACK_FRAME_COUNT = 3
+STEP_DEFINITIONS_FOLDER_NAME = "step_definitions"
 
 class ChildType(Enum):
     Background = 0
@@ -26,7 +27,7 @@ class StepContainer:
         self.name = name
         self.child_type = self.__get_child_type()
         self.sequential_groups = [] if groups == None else groups
-        self.step_definition_folder_path = step_definition_folder_path if step_definition_folder_path is not None else str(Path(traceback.extract_stack()[-STACK_FRAME_COUNT].filename).parent) + "/steps/"
+        self.step_definition_folder_path = step_definition_folder_path if step_definition_folder_path is not None else str(Path(traceback.extract_stack()[-STACK_FRAME_COUNT].filename).parent) + f"/{STEP_DEFINITIONS_FOLDER_NAME}/"
         self.step_definition_class_name = self.__generate_step_definition_class_name()
         self.step_definition_file_name = self.__generate_step_definition_file_name()
 

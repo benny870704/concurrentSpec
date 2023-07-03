@@ -6,7 +6,8 @@ from ..feature import FeatureManager
 
 OUTPUT_FILE = "test_result/test_result.xml"
 
-def generate_test_result_in_xml():
+def generate_test_result_in_xml(output_file=None):
+    print("generating xml test result...")
     all_scenario_count = 0
     all_passed_scenario_count = 0
     all_execution_time = 0
@@ -45,10 +46,15 @@ def generate_test_result_in_xml():
     test_result.set("tests", str(all_scenario_count))
     test_result.set("failures", str(all_scenario_count - all_passed_scenario_count))
 
-    os.makedirs("test_result/", exist_ok=True)
     tree = ET.ElementTree(test_result)
     ET.indent(tree, space="\t", level=0)
-    tree.write(OUTPUT_FILE, encoding="utf-8")
+    if output_file:
+        os.makedirs(os.path.dirname(output_file), exist_ok=True)
+        tree.write(output_file, encoding="utf-8")
+    else:
+        os.makedirs("test_result/", exist_ok=True)
+        tree.write(OUTPUT_FILE, encoding="utf-8")
+    print("done!")
 
 
 def add_scenario_as_test_case(test_suite, feature_name, scenario, iterate_count=None):
@@ -67,7 +73,7 @@ def add_scenario_as_test_case(test_suite, feature_name, scenario, iterate_count=
         failure_message.text = scenario.traceback_messages
 
     system_out = ET.SubElement(test_case, "system-out")
-    system_out.text = scenario.result_printout(color=False) if iterate_count is None else scenario.result_printout(iterate_count, color=False)
+    system_out.text = scenario.full_text() if iterate_count is None else scenario.full_text(iterate_count)
 
 def add_scenario_outline_as_test_case(test_suite, feature_name, scenario, iterate_count):
     test_case = ET.SubElement(test_suite, "testcase")
@@ -86,4 +92,4 @@ def add_scenario_outline_as_test_case(test_suite, feature_name, scenario, iterat
         failure_message.text = scenario.example_execution_result[iterate_count]["traceback_messages"]
 
     system_out = ET.SubElement(test_case, "system-out")
-    system_out.text = scenario.result_printout(iterate_count, color=False)
+    system_out.text = scenario.full_text(iterate_count)

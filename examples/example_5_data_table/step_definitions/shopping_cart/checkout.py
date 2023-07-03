@@ -11,7 +11,7 @@ class Checkout:
     def given_i_have_added_the_following_items_to_my_shopping_cart_(self):
         self.shopping_cart = ShoppingCart()
         self.total_price = 0
-        for row in self.table:
+        for row in self.get_table():
             self.shopping_cart.add_item(row["Item Name"])
             self.total_price += float(row["Price"].replace("$", "")) * int(row["Quantity"])
 

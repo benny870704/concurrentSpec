@@ -12,7 +12,7 @@ class RemoveItemFromCart:
         self.shopping_cart = ShoppingCart()
     
     def given_i_have_the_following_items_in_my_cart_(self):
-        for row in self.table:
+        for row in self.get_table():
             self.shopping_cart.add_item(row["item"])
 
     def when_i_removed_the_orange_from_my_cart(self):

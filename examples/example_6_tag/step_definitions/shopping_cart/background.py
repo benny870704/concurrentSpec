@@ -10,7 +10,7 @@ class Background:
 
     def given_i_search_for_the_following_items_(self):
         self.items = []
-        for row in self.table:
+        for row in self.get_table():
             self.items.append(row["item"])
 
     def given_i_add_the_items_to_my_cart(self):

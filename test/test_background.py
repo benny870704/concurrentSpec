@@ -5,21 +5,22 @@ import unittest
 import traceback
 from pathlib import Path
 sys.path.append("../")
-from src.scenario import Scenario
-from src.scenario_outline import ScenarioOutline
-from src.background import Background
-from src.feature import Feature, FeatureManager
+from concurrentSpec.src.scenario import Scenario
+from concurrentSpec.src.scenario_outline import ScenarioOutline
+from concurrentSpec.src.background import Background
+from concurrentSpec.src.feature import Feature, FeatureManager
 
 class TestBackground(unittest.TestCase):
     def setUp(self):
         self.test_path = str(Path(traceback.extract_stack()[-1].filename).parent)
+        self.step_definition_folder_name = "step_definitions"
+        self.step_definition_folder_path = f"{self.test_path}/{self.step_definition_folder_name}/"
         FeatureManager.console_output = False
     
     def tearDown(self):
         FeatureManager.clear()
-        dir = f"{self.test_path}/steps/"
-        if os.path.exists(dir):
-            shutil.rmtree(dir)
+        if os.path.exists(self.step_definition_folder_path):
+            shutil.rmtree(self.step_definition_folder_path)
 
     def test_default_background_step_definition_class_name_and_file_name(self):
         background = Background()
@@ -35,7 +36,7 @@ class TestBackground(unittest.TestCase):
     def test_generate_file_with_name(self):
         Background("Scheduled sprinkling setup")
         
-        self.assertTrue(os.path.exists(f"{self.test_path}/steps/scheduled_sprinkling_setup.py"))
+        self.assertTrue(os.path.exists(f"{self.step_definition_folder_path}/scheduled_sprinkling_setup.py"))
 
     def test_auto_generate_methods_And(self):
         background = Background("Scheduled sprinkling setup")
@@ -51,9 +52,9 @@ class TestBackground(unittest.TestCase):
         background.Given("a web browser is on the Google page")\
 
         self.assertEqual(
-            ("\n  \033[1;34mBackground: Simple Google search\033[0m\n"
-            "    \033[0mGiven a web browser is on the Google page\033[0m\n"),
-            background.result_printout()
+            ("\n  Background: Simple Google search\n"
+             "    Given a web browser is on the Google page\n"),
+            background.full_text()
         )
 
     def test_And_should_not_appear_without_any_lead_step(self):
@@ -66,26 +67,26 @@ class TestBackground(unittest.TestCase):
     def test_generate_file_without_background_name(self):
         Background()
         
-        self.assertTrue(os.path.exists(f"{self.test_path}/steps/background.py"))
+        self.assertTrue(os.path.exists(f"{self.step_definition_folder_path}/background.py"))
 
     def test_generate_file_duplicated_empty_background_name(self):
         Background()
         Background()
         
-        self.assertTrue(os.path.exists(f"{self.test_path}/steps/background.py"))
-        self.assertEqual(1, len(os.listdir(f"{self.test_path}/steps/")))
+        self.assertTrue(os.path.exists(f"{self.step_definition_folder_path}/background.py"))
+        self.assertEqual(1, len(os.listdir(f"{self.step_definition_folder_path}/")))
 
     def test_generate_file_duplicated_background_name(self):
         Background("Scheduled sprinkling setup")
         Background("Scheduled sprinkling setup")
         
-        self.assertTrue(os.path.exists(f"{self.test_path}/steps/scheduled_sprinkling_setup.py"))
-        self.assertEqual(1, len(os.listdir(f"{self.test_path}/steps/")))
+        self.assertTrue(os.path.exists(f"{self.step_definition_folder_path}/scheduled_sprinkling_setup.py"))
+        self.assertEqual(1, len(os.listdir(f"{self.step_definition_folder_path}/")))
 
     def test_run_background_with_feature_and_one_scenario(self):
-        os.makedirs(f"{self.test_path}/steps/scheduled_sprinkling_feature", exist_ok = True)
-        shutil.copyfile(f"{self.test_path}/test_data/scheduled_sprinkling/scheduled_sprinkling_setup.py", f"{self.test_path}/steps/scheduled_sprinkling_feature/scheduled_sprinkling_setup.py")
-        shutil.copyfile(f"{self.test_path}/test_data/scheduled_sprinkling/scheduled_sprinkling_of_timer_a.py", f"{self.test_path}/steps/scheduled_sprinkling_feature/scheduled_sprinkling_of_timer_a.py")
+        os.makedirs(f"{self.step_definition_folder_path}/scheduled_sprinkling_feature", exist_ok = True)
+        shutil.copyfile(f"{self.test_path}/test_data/scheduled_sprinkling/scheduled_sprinkling_setup.py", f"{self.step_definition_folder_path}/scheduled_sprinkling_feature/scheduled_sprinkling_setup.py")
+        shutil.copyfile(f"{self.test_path}/test_data/scheduled_sprinkling/scheduled_sprinkling_of_timer_a.py", f"{self.step_definition_folder_path}/scheduled_sprinkling_feature/scheduled_sprinkling_of_timer_a.py")
 
         sys.stdout = io.StringIO()
         
@@ -101,11 +102,11 @@ class TestBackground(unittest.TestCase):
         sys.stdout = sys.__stdout__
 
     def test_run_background_with_feature_and_two_scenarios(self):
-        os.makedirs(f"{self.test_path}/steps/scheduled_sprinkling_feature", exist_ok = True)
-        shutil.copyfile(f"{self.test_path}/test_data/scheduled_sprinkling/scheduled_sprinkling_setup.py", f"{self.test_path}/steps/scheduled_sprinkling_feature/scheduled_sprinkling_setup.py")
-        shutil.copyfile(f"{self.test_path}/test_data/scheduled_sprinkling/scheduled_sprinkling_of_timer_a.py", f"{self.test_path}/steps/scheduled_sprinkling_feature/scheduled_sprinkling_of_timer_a.py")
-        shutil.copyfile(f"{self.test_path}/test_data/scheduled_sprinkling/scheduled_sprinkling_of_timer_b.py", f"{self.test_path}/steps/scheduled_sprinkling_feature/scheduled_sprinkling_of_timer_b.py")
-        shutil.copyfile(f"{self.test_path}/test_data/scheduled_sprinkling/scheduled_sprinkling_of_timer_a_and_b.py", f"{self.test_path}/steps/scheduled_sprinkling_feature/scheduled_sprinkling_of_timer_a_and_b.py")
+        os.makedirs(f"{self.step_definition_folder_path}/scheduled_sprinkling_feature", exist_ok = True)
+        shutil.copyfile(f"{self.test_path}/test_data/scheduled_sprinkling/scheduled_sprinkling_setup.py", f"{self.step_definition_folder_path}/scheduled_sprinkling_feature/scheduled_sprinkling_setup.py")
+        shutil.copyfile(f"{self.test_path}/test_data/scheduled_sprinkling/scheduled_sprinkling_of_timer_a.py", f"{self.step_definition_folder_path}/scheduled_sprinkling_feature/scheduled_sprinkling_of_timer_a.py")
+        shutil.copyfile(f"{self.test_path}/test_data/scheduled_sprinkling/scheduled_sprinkling_of_timer_b.py", f"{self.step_definition_folder_path}/scheduled_sprinkling_feature/scheduled_sprinkling_of_timer_b.py")
+        shutil.copyfile(f"{self.test_path}/test_data/scheduled_sprinkling/scheduled_sprinkling_of_timer_a_and_b.py", f"{self.step_definition_folder_path}/scheduled_sprinkling_feature/scheduled_sprinkling_of_timer_a_and_b.py")
 
         sys.stdout = io.StringIO()
 
@@ -141,8 +142,8 @@ class TestBackground(unittest.TestCase):
         self.assertEqual("And: must not be the first clause", str(e.exception))
 
     def test_do_set_up_before_executing_scenario(self):
-        os.makedirs(f"{self.test_path}/steps", exist_ok = True)
-        shutil.copyfile(f"{self.test_path}/test_data/set_up_should_be_executed.py", f"{self.test_path}/steps/set_up_should_be_executed.py")
+        os.makedirs(f"{self.step_definition_folder_path}", exist_ok = True)
+        shutil.copyfile(f"{self.test_path}/test_data/set_up_should_be_executed.py", f"{self.step_definition_folder_path}/set_up_should_be_executed.py")
         
         captured_output = io.StringIO()
         sys.stdout = captured_output
@@ -163,7 +164,7 @@ class TestBackground(unittest.TestCase):
         Background("Simple Google search")\
         .Given("a web browser is on the Google page")\
         
-        whole_class_text = Path(f"{self.test_path}/steps/simple_google_search.py").read_text()
+        whole_class_text = Path(f"{self.step_definition_folder_path}/simple_google_search.py").read_text()
         
         self.assertEqual(1, whole_class_text.count("given_a_web_browser_is_on_the_google_page(self)"))
 
@@ -172,14 +173,14 @@ class TestBackground(unittest.TestCase):
         .Given("a web browser is on the Google page")\
         .Given("a web browser is on the Google page")\
         
-        whole_class_text = Path(f"{self.test_path}/steps/simple_google_search.py").read_text()
+        whole_class_text = Path(f"{self.step_definition_folder_path}/simple_google_search.py").read_text()
         
         self.assertEqual(1, whole_class_text.count("given_a_web_browser_is_on_the_google_page(self)"))
 
     def test_background_work_with_scenario_outline(self):
-        os.makedirs(f"{self.test_path}/steps/scheduled_sprinkling_feature", exist_ok = True)
-        shutil.copyfile(f"{self.test_path}/test_data/scheduled_sprinkling/scheduled_sprinkling_setup.py", f"{self.test_path}/steps/scheduled_sprinkling_feature/scheduled_sprinkling_setup.py")
-        shutil.copyfile(f"{self.test_path}/test_data/scheduled_sprinkling/scheduled_sprinkling_of_timer_c.py", f"{self.test_path}/steps/scheduled_sprinkling_feature/scheduled_sprinkling_of_timer_c.py")
+        os.makedirs(f"{self.step_definition_folder_path}/scheduled_sprinkling_feature", exist_ok = True)
+        shutil.copyfile(f"{self.test_path}/test_data/scheduled_sprinkling/scheduled_sprinkling_setup.py", f"{self.step_definition_folder_path}/scheduled_sprinkling_feature/scheduled_sprinkling_setup.py")
+        shutil.copyfile(f"{self.test_path}/test_data/scheduled_sprinkling/scheduled_sprinkling_of_timer_c.py", f"{self.step_definition_folder_path}/scheduled_sprinkling_feature/scheduled_sprinkling_of_timer_c.py")
 
         sys.stdout = io.StringIO()
 

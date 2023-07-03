@@ -32,6 +32,8 @@ class ShortTracebackResult(unittest.TextTestResult):
         traceback_str = ''.join(traceback_message)
         # Add the failure to the list of failures with the modified traceback
         self.errors.append((test, traceback_str))
+
+        raise err[1]
     
     def addFailure(self, test, err):
         exc_type, exc_value, tb = err

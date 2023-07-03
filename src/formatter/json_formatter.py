@@ -3,10 +3,10 @@ from ..status import Status
 from ..feature import FeatureManager
 
 class JsonFormatter:
-    def __init__(self) -> None:
+    def __init__(self):
         self.result_in_json = []
 
-    def format_result(self, pretty=False):
+    def format_result(self, pretty=False, output_file=None):
         for feature_name, feature in FeatureManager.get_features().items():
             elements = self.format_elements_in_feature(feature_name, feature)
             feature_status = self.__check_feature_execution_result(elements)
@@ -19,7 +19,12 @@ class JsonFormatter:
                 "status": feature_status,
                 "elements": elements
             })
-        return json.dumps(self.result_in_json) if not pretty else json.dumps(self.result_in_json, indent=2)
+        
+        result = json.dumps(self.result_in_json) if not pretty else json.dumps(self.result_in_json, indent=2)
+        if output_file:
+            with open(output_file, 'w') as f:
+                f.write(result)
+        return result
 
     def format_elements_in_feature(self, feature_name, feature):
         elements = []

@@ -4,6 +4,7 @@ from .data_table import DataTable
 from .status import Status
 sys.path.append("../")
 from .execute_state import ExecuteState
+
 class Step:
     def __init__(self, step, description, kwargs, doc_string="", data_table=None, continue_after_failure=False, lead_step=None, location=""):
         self.step = step
@@ -29,7 +30,8 @@ class Step:
         return re.sub(r'\W+', '_', re.sub(r'\w+', lambda m:m.group(0).lower(), f"{self.lead_step} {self.description}"))
     
     def __repr__(self):
-        return f"(step = {self.step}, description = {self.description}, method_name = {self.method_name}, kwargs = {self.kwargs}, lead_step = {self.lead_step})"
+        return f"({self.step} {self.description})"
+        # return f"(step = {self.step}, description = {self.description}, method_name = {self.method_name}, kwargs = {self.kwargs}, lead_step = {self.lead_step})"
 
     def __check_doc_string_and_data_table(self, doc_string, data_table):
         if data_table is not None:

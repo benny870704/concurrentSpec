@@ -9,6 +9,12 @@ import warnings
 import traceback
 import shutil
 
+RESET = "\033[0m"
+RED = "\033[0;31m"
+GREEN = "\033[0;32m"
+YELLOW = "\033[0;33m"
+GRAY = "\033[90m"
+
 def initialize_scenario_context(class_name, import_module_name, file_location):
     if import_module_name in sys.modules:
         del sys.modules[import_module_name]
@@ -24,12 +30,13 @@ class TestScenario(unittest.TestCase):
 
     def setUp(self):
         self.test_path = str(Path(traceback.extract_stack()[-1].filename).parent)
+        self.step_definition_folder_name = "step_definitions"
+        self.step_definition_folder_path = f"{self.test_path}/{self.step_definition_folder_name}/"
         FeatureManager.console_output = False
 
     def tearDown(self):
-        dir = f"{self.test_path}/steps/"
-        if os.path.exists(dir):
-            shutil.rmtree(dir)
+        if os.path.exists(self.step_definition_folder_path):
+            shutil.rmtree(self.step_definition_folder_path)
 
     def test_scenario_steps_class_name_and_file_name(self):
         scenario = Scenario("Scheduled sprinkling")
@@ -38,7 +45,7 @@ class TestScenario(unittest.TestCase):
 
     def test_empty_scenario_should_contain_set_up_and_tear_down(self):
         scenario = Scenario("Test set up and tear down")
-        scenario_context = initialize_scenario_context(scenario.get_step_definition_class_name(), "test_set_up_and_tear_down", f"{self.test_path}/steps/test_set_up_and_tear_down.py")
+        scenario_context = initialize_scenario_context(scenario.get_step_definition_class_name(), "test_set_up_and_tear_down", f"{self.step_definition_folder_path}/test_set_up_and_tear_down.py")
         
         self.assertIsNotNone(getattr(scenario_context, 'set_up', None))
         self.assertIsNotNone(getattr(scenario_context, 'tear_down', None))
@@ -46,7 +53,7 @@ class TestScenario(unittest.TestCase):
     def test_generate_file_with_name(self):
         Scenario("Scheduled sprinkling")
         
-        self.assertTrue(os.path.exists(f"{self.test_path}/steps/scheduled_sprinkling.py"))
+        self.assertTrue(os.path.exists(f"{self.step_definition_folder_path}/scheduled_sprinkling.py"))
         
     def test_auto_generate_methods_And(self):
         scenario = Scenario("Scheduled sprinkling")
@@ -68,13 +75,13 @@ class TestScenario(unittest.TestCase):
                 .But("the related results do not include \"pandemonium\"")
 
         self.assertEqual(
-            ("\n\033[1;34mScenario: Simple Google search\033[0m\n"
-            "  \033[0mGiven a web browser is on the Google page\033[0m\n"
-            "  \033[0mWhen the search phrase \"panda\" is entered\033[0m\n"
-            "  \033[0mThen results for \"panda\" are shown\033[0m\n"
-            "  \033[0mAnd the related results include \"Panda Express\"\033[0m\n"
-            "  \033[0mBut the related results do not include \"pandemonium\"\033[0m\n"),
-            scenario.result_printout()
+            ("\nScenario: Simple Google search\n"
+            "  Given a web browser is on the Google page\n"
+            "  When the search phrase \"panda\" is entered\n"
+            "  Then results for \"panda\" are shown\n"
+            "  And the related results include \"Panda Express\"\n"
+            "  But the related results do not include \"pandemonium\"\n"),
+            scenario.full_text()
         )
 
     def test_Given_should_not_appear_after_a_When(self):
@@ -107,22 +114,45 @@ class TestScenario(unittest.TestCase):
                     
         self.assertEqual("But: must not be the first clause", str(e.exception))
 
-    def test_step_default_definition_should_throw_runtime_error(self):
-        sys.stdout = io.StringIO()
+    def test_default_step_definition_should_show_yellow_step(self):
+        scenario = Scenario("Scheduled sprinkling")
 
-        with self.assertRaises(RuntimeError) as e:
-            Scenario("Scheduled sprinkling")\
-            .Given("water supply is normal")\
-            .execute()
+        scenario.Given("water supply is normal")\
+                .execute()
+        
+        self.assertTrue(f"{YELLOW}Given water supply is normal{RESET}\n" in scenario.result_printout())
 
-        sys.stdout = sys.__stdout__
+    def test_passed_step_definition_should_show_green_step(self):
+        os.makedirs(self.step_definition_folder_path, exist_ok = True)
+        shutil.copyfile(f"{self.test_path}/test_data/simple_google_search.py", f"{self.step_definition_folder_path}/simple_google_search.py")
+        scenario = Scenario("Simple Google search")
 
-        self.assertTrue("Traceback (most recent call last):\n" in str(e.exception)) 
-        self.assertTrue(
-            ("\n\033[1;31mError(s) in the group:\n\n\033"
-            "[0;31m    NotImplementedError from step: water supply is normal,\n"
-            "    error message: given_water_supply_is_normal\n\n\033[0m") in str(e.exception)
-        )
+        scenario.Given("a web browser is on the webpage page", webpage = None)\
+                .execute()
+
+        self.assertTrue(f"{GREEN}Given a web browser is on the webpage page{RESET}\n" in scenario.result_printout())
+
+    def test_failed_step_definition_should_show_red_step_and_traceback_message(self):
+        os.makedirs(self.step_definition_folder_path, exist_ok = True)
+        shutil.copyfile(f"{self.test_path}/test_data/simple_google_search.py", f"{self.step_definition_folder_path}/simple_google_search.py")
+        scenario = Scenario("Simple Google search")
+
+        scenario.Given("a web browser is on the webpage page")\
+                .execute()
+
+        self.assertTrue(f"{RED}Given a web browser is on the webpage page{RESET}\n" in scenario.result_printout())
+        self.assertTrue("Traceback (most recent call last):" in scenario.result_printout())
+
+    def test_skipped_step_definition_should_show_gray_step(self):
+        os.makedirs(self.step_definition_folder_path, exist_ok = True)
+        shutil.copyfile(f"{self.test_path}/test_data/simple_google_search.py", f"{self.step_definition_folder_path}/simple_google_search.py")
+        scenario = Scenario("Simple Google search")
+
+        scenario.Given("a web browser is on the webpage page")\
+                .When("the search phrase keyword is entered")\
+                .execute()
+
+        self.assertTrue(f"{GRAY}When the search phrase keyword is entered{RESET}\n" in scenario.result_printout())
 
     def test_default_scenario_step_definition_class_name_and_file_name(self):
         scenario = Scenario()
@@ -133,21 +163,21 @@ class TestScenario(unittest.TestCase):
     def test_generate_file_without_scenario_name(self):
         Scenario()
         
-        self.assertTrue(os.path.exists(f"{self.test_path}/steps/step_definitions.py"))
+        self.assertTrue(os.path.exists(f"{self.step_definition_folder_path}/step_definitions.py"))
 
     def test_generate_file_duplicated_empty_scenario_name(self):
         Scenario()
         Scenario()
         
-        self.assertTrue(os.path.exists(f"{self.test_path}/steps/step_definitions.py"))
-        self.assertEqual(1, len(os.listdir(f"{self.test_path}/steps/")))
+        self.assertTrue(os.path.exists(f"{self.step_definition_folder_path}/step_definitions.py"))
+        self.assertEqual(1, len(os.listdir(f"{self.step_definition_folder_path}/")))
 
     def test_generate_file_duplicated_scenario_name(self):
         Scenario("Scheduled sprinkling")
         Scenario("Scheduled sprinkling")
         
-        self.assertTrue(os.path.exists(f"{self.test_path}/steps/scheduled_sprinkling.py"))
-        self.assertEqual(1, len(os.listdir(f"{self.test_path}/steps/")))
+        self.assertTrue(os.path.exists(f"{self.step_definition_folder_path}/scheduled_sprinkling.py"))
+        self.assertEqual(1, len(os.listdir(f"{self.step_definition_folder_path}/")))
         
     def test_duplicate_scenarios_should_generate_step_definition_only_once(self):
         Scenario("Simple Google search")\
@@ -168,7 +198,7 @@ class TestScenario(unittest.TestCase):
         .And("the related results include \"Panda Express\"")\
         .But("the related results do not include \"pandemonium\"")
         
-        whole_class_text = Path(f"{self.test_path}/steps/simple_google_search.py").read_text()
+        whole_class_text = Path(f"{self.step_definition_folder_path}/simple_google_search.py").read_text()
         
         self.assertEqual(1, whole_class_text.count("given_a_web_browser_is_on_the_google_page(self)"))
         self.assertEqual(1, whole_class_text.count("when_the_search_phrase_panda_is_entered(self)"))
@@ -191,7 +221,7 @@ class TestScenario(unittest.TestCase):
         .But("the related results do not include \"pandemonium\"")\
         .But("the related results do not include \"pandemonium\"")
         
-        whole_class_text = Path(f"{self.test_path}/steps/simple_google_search.py").read_text()
+        whole_class_text = Path(f"{self.step_definition_folder_path}/simple_google_search.py").read_text()
         
         self.assertEqual(1, whole_class_text.count("given_a_web_browser_is_on_the_google_page(self)"))
         self.assertEqual(1, whole_class_text.count("when_the_search_phrase_panda_is_entered(self)"))
@@ -200,25 +230,19 @@ class TestScenario(unittest.TestCase):
         self.assertEqual(1, whole_class_text.count("then_the_related_results_do_not_include_pandemonium_(self)"))
 
     def test_continuing_execution_on_a_step(self):
-        os.makedirs(f"{self.test_path}/steps", exist_ok = True)
-        shutil.copyfile(f"{self.test_path}/test_data/continuing_execution_at_a_specific_step.py", f"{self.test_path}/steps/continuing_execution_at_a_specific_step.py")
+        os.makedirs(self.step_definition_folder_path, exist_ok = True)
+        shutil.copyfile(f"{self.test_path}/test_data/continuing_execution_at_a_specific_step.py", f"{self.step_definition_folder_path}/continuing_execution_at_a_specific_step.py")
 
-        sys.stdout = io.StringIO()
+        scenario = Scenario("Continuing execution at a specific step")
+        scenario.Given("Some precondition")\
+                .When("An event happens")\
+                .Then("The step is true")\
+                .And("The step fails but it adds a tag to continue execution", continue_after_failure=True)\
+                .Then("The step should be executed and it fails")\
+                .execute()
 
-        with self.assertRaises(RuntimeError) as e:
-            Scenario("Continuing execution at a specific step")\
-            .Given("Some precondition")\
-            .When("An event happens")\
-            .Then("The step is true")\
-            .And("The step fails but it adds a tag to continue execution", continue_after_failure=True)\
-            .Then("The step should be executed and it fails")\
-            .execute()
-
-        sys.stdout = sys.__stdout__
-
-        self.assertTrue("\n\033[1;31mError(s) in the group:\n\n\033[0;31m" in str(e.exception))
-        self.assertTrue("    AssertionError from step: The step fails but it adds a tag to continue execution\n\n" in str(e.exception))
-        self.assertTrue("    AssertionError from step: The step should be executed and it fails\n\n\033[0m" in str(e.exception))
+        self.assertTrue(f"{RED}And The step fails but it adds a tag to continue execution" in scenario.result_printout())
+        self.assertTrue(f"{RED}Then The step should be executed and it fails" in scenario.result_printout())
         
     def test_set_continue_after_failure_on_Given_and_When_group_should_give_warnings(self):
         with warnings.catch_warnings(record=True) as caught_warnings:
@@ -241,8 +265,8 @@ class TestScenario(unittest.TestCase):
         self.assertEqual("\033[33m\nAnd in When group should not set the keyword argument continue_after_failure as True! The keyword argument resets to False.\033[0m", str(caught_warnings[5].message))
     
     def test_do_set_up_before_executing_scenario(self):
-        os.makedirs(f"{self.test_path}/steps", exist_ok = True)
-        shutil.copyfile(f"{self.test_path}/test_data/set_up_should_be_executed.py", f"{self.test_path}/steps/set_up_should_be_executed.py")
+        os.makedirs(self.step_definition_folder_path, exist_ok = True)
+        shutil.copyfile(f"{self.test_path}/test_data/set_up_should_be_executed.py", f"{self.step_definition_folder_path}/set_up_should_be_executed.py")
         
         scenario = Scenario("Set Up Should Be Executed")
 
@@ -253,11 +277,11 @@ class TestScenario(unittest.TestCase):
                 .Then("results for \"panda\" are shown")\
                 .execute()
 
-        self.assertTrue("Set Up Executed" in scenario.captured_output_message())
+        self.assertTrue("Set Up Executed" in scenario.get_output_message())
     
     def test_do_tear_down_after_finish_execute_scenario(self):
-        os.makedirs(f"{self.test_path}/steps", exist_ok = True)
-        shutil.copyfile(f"{self.test_path}/test_data/tear_down_should_be_executed.py", f"{self.test_path}/steps/tear_down_should_be_executed.py")
+        os.makedirs(self.step_definition_folder_path, exist_ok = True)
+        shutil.copyfile(f"{self.test_path}/test_data/tear_down_should_be_executed.py", f"{self.step_definition_folder_path}/tear_down_should_be_executed.py")
         
         captured_output = io.StringIO()
         sys.stdout = captured_output
@@ -273,28 +297,23 @@ class TestScenario(unittest.TestCase):
 
         sys.stdout = sys.__stdout__
 
-        self.assertTrue("Tear Down Executed" in scenario.captured_output_message()) 
+        self.assertTrue("Tear Down Executed" in scenario.get_output_message()) 
         
     def test_do_tear_down_after_fail_execute_scenario(self):
-        os.makedirs(f"{self.test_path}/steps", exist_ok = True)
-        shutil.copyfile(f"{self.test_path}/test_data/tear_down_should_be_executed.py", f"{self.test_path}/steps/tear_down_should_be_executed.py")
-        
-        captured_output = io.StringIO()
-        sys.stdout = captured_output
-        with self.assertRaises(RuntimeError) as e:
-            scenario = Scenario("Tear Down Should Be Executed")
+        os.makedirs(self.step_definition_folder_path, exist_ok = True)
+        shutil.copyfile(f"{self.test_path}/test_data/tear_down_should_be_executed.py", f"{self.step_definition_folder_path}/tear_down_should_be_executed.py")
 
-            scenario.Given("a web browser is on the Google page")\
-                    \
-                    .When("the search phrase \"panda\" is entered")\
-                    \
-                    .Then("results for \"capybara\" are shown")\
-                    .execute()
+        scenario = Scenario("Tear Down Should Be Executed")
 
-        sys.stdout = sys.__stdout__
+        scenario.Given("a web browser is on the Google page")\
+                \
+                .When("the search phrase \"panda\" is entered")\
+                \
+                .Then("results for \"capybara\" are shown")\
+                .execute()
 
-        self.assertTrue("Capybara Not Exist" in str(e.exception))
-        self.assertTrue("Tear Down Executed" in scenario.captured_output_message())
+        self.assertTrue("Capybara Not Exist" in scenario.result_printout())
+        self.assertTrue("Tear Down Executed" in scenario.get_output_message())
 
 if __name__ == '__main__':
     unittest.main()
