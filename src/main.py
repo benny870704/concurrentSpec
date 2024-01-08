@@ -1,8 +1,6 @@
+import io
 import argparse
 import unittest
-import io
-# import sys
-# sys.path.append("../../")
 from .custom_test_loader import CustomTestLoader
 from .custom_test_result import ShortTracebackResult
 from .feature import FeatureManager
@@ -10,6 +8,8 @@ from .formatter.json_formatter import JsonFormatter
 from .reporter.test_result_summarizer import TestResultSummarizer
 from .reporter.test_result_xml_generator import generate_test_result_in_xml
 from .reporter.test_result_html_generator import generate_test_result_in_html
+
+VERSION = "1.0.0-b1"
 
 def main():
     supported_format = ["json", "json.pretty", "xml", "html"]
@@ -19,13 +19,15 @@ def main():
     parser.add_argument("-t", "--tags", help = "scenarios with the given tags will be executed") # tag expression v2
     parser.add_argument("-f", "--format", help = "output format")
     parser.add_argument("-o", "--output", help = "output file")
+    parser.add_argument("-v", "--version", help = "version of concurrentSpec", action = 'version', version = VERSION)
 
     args = parser.parse_args()
-    project_path = args.path
+
+    project_path = args.path if args.path is not None else "./"
     tags = args.tags
     format = args.format
     output_file = args.output
-    
+
     if format != None and format not in supported_format: raise parser.error("Unsupported format")
 
     suite = unittest.TestSuite()
@@ -41,7 +43,6 @@ def main():
 
     if format != None and format.find("json") != -1: FeatureManager.console_output = False
     FeatureManager.capture_output = False
-    # runner = unittest.TextTestRunner(resultclass=ShortTracebackResult)
     runner = unittest.TextTestRunner(resultclass=ShortTracebackResult, stream=io.StringIO())
     runner.run(suite)
 
