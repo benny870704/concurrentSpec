@@ -1,4 +1,6 @@
 .DS_Store
 .vscode/
 __pycache__
-log\
+log/
+build/
+concurrentSpec.egg-info/

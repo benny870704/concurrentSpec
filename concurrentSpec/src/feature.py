@@ -1,4 +1,3 @@
-import sys
 import warnings
 
 class __FeatureManager:
@@ -22,8 +21,6 @@ class __FeatureManager:
             self.class_to_feature.update({class_name: feature_name})
             if class_name not in self.tag_info: self.tag_info[class_name] = {}
         else:
-            # print('Error: Declare more than one feature in a file is not allowed.')
-            # sys.exit()
             raise RuntimeError("Declare more than one feature in a file is not allowed.")
 
     def __check_scenario_is_in_its_feature(self, scenario) -> bool:
@@ -127,7 +124,6 @@ class __FeatureManager:
     def add_feature(self, feature_name, feature_description, class_name, location):
         if feature_name in self.feature_dictionary:
             warnings.warn(f"\033[1;93m[WARNING] Feature: {feature_name} has already existed\033[0m", stacklevel=4)
-            # print(f"\n\033[1;93m[WARNING] Feature: {feature_name} has already existed\033[0m", end="")
         elif feature_name not in self.feature_dictionary:
             self.__check_feature_is_not_declared_more_than_one(class_name, feature_name)
             self.feature_dictionary[feature_name] = {"location": location, "description": feature_description, "scenarios": [], "background": None}

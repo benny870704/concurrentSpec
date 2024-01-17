@@ -16,7 +16,7 @@ Welcome to `concurrentSpec`, a Python-based Behavior-Driven Development (BDD) to
 - [System Scenario](#system-scenario)
 
 ### Installation
-Download the latest [release]() and install it.
+Download the latest [release](dist/concurrentSpec-1.0.0b1.tar.gz) and install it.
 ```shell
 pip install concurrentSpec-${VERSION}.tar.gz
 ```

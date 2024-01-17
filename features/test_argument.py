@@ -1,7 +1,7 @@
 import unittest
 import sys
 sys.path.append("../")
-from src.scenario import Scenario
+from concurrentSpec.src.scenario import Scenario
 
 class TestArgument(unittest.TestCase):
 

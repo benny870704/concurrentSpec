@@ -55,7 +55,6 @@ class TagExpressionsV2:
         if expr is None: raise ValueError("Invalid input: None.")
         self.tokens = self.lexer(expr)
         self.parsed_expr = self.and_expr()
-        # print(self.parsed_expr)
         if self.token_pos != len(self.tokens):
             raise SyntaxError(f"Unexpected token {self.current_token().type} within the given input '{self.input}'.")
         return self.parsed_expr
@@ -94,16 +93,11 @@ class TagExpressionsV2:
         return self.evaluate(self.parsed_expr, tags) if self.parsed_expr is not None else False
 
     def evaluate(self, parsed_expr, tags: list):
-        # print(f"evaluate {parsed_expr}")
         if parsed_expr[0] == "not":
-            # print(f"not {parsed_expr[1]}")
             return not self.evaluate(parsed_expr[1], tags)
         elif parsed_expr[0] == "and":
-            # print(f"and {parsed_expr[1]} {parsed_expr[2]}")
             return self.evaluate(parsed_expr[1], tags) and self.evaluate(parsed_expr[2], tags)
         elif parsed_expr[0] == "or":
-            # print(f"or {parsed_expr[1]} {parsed_expr[2]}")
             return self.evaluate(parsed_expr[1], tags) or self.evaluate(parsed_expr[2], tags)
         else:
-            # print(f"tag {parsed_expr} in {tags}")
             return any(fnmatch.fnmatch(tag, parsed_expr) for tag in tags)

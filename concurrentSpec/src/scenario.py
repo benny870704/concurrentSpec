@@ -1,4 +1,3 @@
-import re
 import time
 import textwrap
 import traceback
@@ -8,64 +7,20 @@ from .feature import FeatureManager
 from .step_container import StepContainer
 from .output_interceptor import OutputInterceptor
 
-class ScenarioOutline(StepContainer):
+class Scenario(StepContainer):
     def __init__(self, scenario_name="", step_definition_folder_path=None, groups=None):
         self.scenario_name = scenario_name
         self.traceback_messages, self.error_messages = "", ""
-        self.background_execution_result = None
+        self.set_up_error, self.tear_down_error = "", ""
+        self.background_execution_result = {}
         self.execution_result = Status.untested
         self.execution_time = None
-        self.examples = None
-        self.example_execution_result = {}
-        self.example_error_log = ""
         super().__init__(scenario_name, step_definition_folder_path, groups)
-    
+
     def get_scenario_name(self):
         return self.scenario_name
     
-    def has_examples(self):
-        return self.examples != None and self.examples != []
-
-    """
-    Given an example:
-    | key1 | key2 |
-    |  1   |  a   |
-    |  2   |  b   |
-    translate the example above to [{key1: 1, key2: 'a'}, {key1: 2, key2: 'b'}]
-    """
-    def WithExamples(self, examples):
-        self.examples = []
-        self.example_rows = []
-    
-        examples = re.split(r'\|\s*\n\s*\|\s*', examples)
-        examples = [row.strip().split('|') for row in examples]
-
-        for index, row in enumerate(examples[:]):
-            examples[index] = [re.sub(r'^[ \t]+|[ \t]+$', '', variable, flags=re.MULTILINE) for variable in row if variable != ""]
-
-        self.example_rows = examples
-        keys = examples[0]
-        for values in examples[1:]:
-            if len(values) == len(keys):
-                example = {}
-                for key, value in zip(keys, values):
-                    example[key] = value
-                self.examples.append(example)
-            else:
-                raise Exception("Cannot parse example correctly.")
-        
-        return self
-
-    def __add_example_variables_to_step_kwargs(self):
-        for sequential_group in self.sequential_groups:
-            for step in sequential_group.get_all_steps():
-                example_variables = re.findall(r"<(.*?)>", step.description)
-                if example_variables:
-                    for variable in example_variables:
-                        variable_to_keyword = {variable.replace(' ', '_'): None}
-                        step.kwargs = {**step.kwargs, **variable_to_keyword}
-
-    def full_text(self, iterate_count = None):
+    def full_text(self):
         full_text, indent, indent_count = "", "  ", 0
 
         if self.feature_name is not None:
@@ -82,22 +37,17 @@ class ScenarioOutline(StepContainer):
 
         if FeatureManager.get_tags_of_scenario(self.feature_name, self.scenario_name):
             full_text += "\n" + indent*indent_count + "".join([f"@{tag} "for tag in FeatureManager.get_tags_of_scenario(self.feature_name, self.scenario_name)])
-        scenario_name = self.__replace_name_in_angle_brackets_to_example(self.scenario_name, iterate_count) if iterate_count != None else self.scenario_name
-        full_text += "\n" + indent*indent_count + "Scenario Outline: " + scenario_name
-        full_text += f" - Example #{iterate_count+1}\n" if iterate_count != None else "\n"
+        full_text += "\n" + indent*indent_count + "Scenario: " + self.scenario_name + "\n"
 
         for group in self.sequential_groups:
             for step in group.get_all_steps():
-                if self.examples and iterate_count != None:
-                    full_text += indent*(indent_count+1) + step.step + " " + self.__replace_name_in_angle_brackets_to_example(step.description, iterate_count) + "\n"
-                else:
-                    full_text += indent*(indent_count+1) + step.step + " " + step.description + "\n"
+                full_text += indent*(indent_count+1) + step.step + " " + step.description + "\n"
                 full_text += indent*(indent_count+2) + "\"\"\"\n" + textwrap.indent(step.doc_string, indent*(indent_count+2)) + "\n" + indent*(indent_count+2) + "\"\"\"\n" if step.doc_string != "" else ""
                 full_text += step.data_table.get_pretty_string(indent=indent*(indent_count+2)) if step.data_table is not None else ""
 
         return full_text
     
-    def result_printout(self, iterate_count = None, color = True):
+    def result_printout(self):
         full_text, indent, indent_count = "", "  ", 0
 
         if self.feature_name is not None:
@@ -112,11 +62,10 @@ class ScenarioOutline(StepContainer):
             if FeatureManager.get_background(self.feature_name) != None:
                 full_text += FeatureManager.get_background(self.feature_name).result_printout()
 
+        if self.set_up_error != "": full_text += "\n" + indent*indent_count + self.set_up_error
         if FeatureManager.get_tags_of_scenario(self.feature_name, self.scenario_name):
             full_text += "\n" + indent*indent_count + "".join([f"@{tag} "for tag in FeatureManager.get_tags_of_scenario(self.feature_name, self.scenario_name)])
-        scenario_name = self.__replace_name_in_angle_brackets_to_example(self.scenario_name, iterate_count) if iterate_count != None else self.scenario_name
-        full_text += "\n" + indent*indent_count + "\033[1;34mScenario Outline: " + scenario_name
-        full_text += f" - Example #{iterate_count+1}\033[0m\n" if iterate_count != None else "\033[0m\n"
+        full_text += "\n" + indent*indent_count + "\033[1;34mScenario: " + self.scenario_name + "\033[0m\n"
 
         for group in self.sequential_groups:
             for step in group.get_all_steps():
@@ -124,18 +73,14 @@ class ScenarioOutline(StepContainer):
                 elif step.execution_result == Status.failed: color = "\033[0;31m"
                 elif step.execution_result == Status.undefined: color = "\033[0;33m"
                 else: color = "\033[90m"
-
-                if self.has_examples() and iterate_count != None:
-                    full_text += indent*(indent_count+1) + color + step.step + " " + self.__replace_name_in_angle_brackets_to_example(step.description, iterate_count) + "\033[0m\n"
-                else:
-                    full_text += indent*(indent_count+1) + color + step.step + " " + step.description + "\033[0m\n"
+                full_text += indent*(indent_count+1) + color + step.step + " " + step.description + "\033[0m\n"
                 full_text += indent*(indent_count+2) + "\"\"\"\n" + textwrap.indent(step.doc_string, indent*(indent_count+2)) + "\n" + indent*(indent_count+2) + "\"\"\"\n" if step.doc_string != "" else ""
                 full_text += step.data_table.get_pretty_string(indent=indent*(indent_count+2)) if step.data_table is not None else ""
                 if step.error_message != "" and step.execution_result != Status.undefined:
                     full_text += textwrap.indent(textwrap.dedent(step.error_message), indent*(indent_count+2))
-
-        ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
-        return full_text if color else ansi_escape.sub('', full_text)
+        
+        if self.tear_down_error != "": full_text += "\n" + indent*indent_count + self.tear_down_error
+        return full_text
     
     def format_output_message(self, message, indent):
         return "".join([f"{indent}{line}\n" for line in message.split('\n')])
@@ -152,21 +97,6 @@ class ScenarioOutline(StepContainer):
     def execute(self, skip = None):
         if skip is not None:
             return
-        if not self.has_examples():
-            self.__execute()
-        else:
-            self.__add_example_variables_to_step_kwargs()
-            iterate_count = self.__check_iterate_count()
-        
-            for i in range(iterate_count):
-                self.__update_step_kwargs(i)
-                self.__execute(i)
-                self.__record_example_execution_result(i)
-            self.__record_execution_result()
-            # if self.example_error_log != "": raise RuntimeError(self.example_error_log)
-
-    def __execute(self, iterate_count = None):
-        runtime_error = None
         start_time = time.time()
         output_interceptor = OutputInterceptor()
         output_interceptor.start(FeatureManager.capture_output, FeatureManager.capture_output, FeatureManager.capture_log)
@@ -178,7 +108,7 @@ class ScenarioOutline(StepContainer):
             self.__execute_steps(scenario_context)
             self.__tear_down(scenario_context)
         except RuntimeError as e:
-            runtime_error = e
+            pass
 
         output_interceptor.stop()
         self.execution_time = time.time() - start_time
@@ -187,14 +117,11 @@ class ScenarioOutline(StepContainer):
         self.captured_output = self.format_output_message(output_interceptor.get_captured_output(), indent)
         self.captured_logs = self.format_log_message(output_interceptor.get_captured_logs(), indent)
         if FeatureManager.console_output:
-            print("\n" + self.result_printout(iterate_count), end = "")
+            print("\n" + self.result_printout(), end = "")
             if output_interceptor.get_captured_output() != "":
-                print("\n    Captured Output:\n" + self.captured_output)
-            # if output_interceptor.get_captured_error() != "":
-            #     print("\n    Captured Error:\n" + self.format_output_message(output_interceptor.get_captured_error()))
+                print(f"\n{indent}Captured Output:\n" + self.captured_output)
             if output_interceptor.get_captured_logs():
-                print("\n    Log Output:\n" + self.captured_logs)
-        # if runtime_error is not None and iterate_count is None: raise runtime_error
+                print(f"\n{indent}Log Output:\n" + self.captured_logs)
 
     def __execute_background(self, scenario_context):
         if self.feature_name != None:
@@ -202,13 +129,13 @@ class ScenarioOutline(StepContainer):
             if background != None:
                 try:
                     background_context = background.execute()
-                    scenario_context.__dict__ = {**scenario_context.__dict__, **background_context.__dict__}
                     self.__record_background_result(background)
+                    scenario_context.__dict__ = {**scenario_context.__dict__, **background_context.__dict__}
                 except RuntimeError as e:
+                    self.__record_background_result(background)
                     self.execution_result = Status.failed
                     self.traceback_messages += background.traceback_messages
                     self.error_messages += background.error_messages
-                    self.__record_background_result(background)
                     raise e
                 
     def __record_background_result(self, background):
@@ -250,6 +177,7 @@ class ScenarioOutline(StepContainer):
                 scenario_context.set_up()
             except Exception as e:
                 error_message = f"    {type(e).__name__} from set_up\n\n"
+                self.set_up_error = f"\033[0;31mHOOK-ERROR in Scenario set_up: {type(e).__name__}: {e}\033[0m\n"
                 traceback_message += traceback.format_exc() + "\n"
                 self.traceback_messages += traceback_message
                 self.error_messages += error_message
@@ -262,6 +190,7 @@ class ScenarioOutline(StepContainer):
             except Exception as e:
                 self.execution_result = Status.failed
                 error_message = f"    {type(e).__name__} from tear_down\n\n"
+                self.tear_down_error = f"\033[0;31mHOOK-ERROR in Scenario tear_down: {type(e).__name__}: {e}\033[0m\n"
                 traceback_message += traceback.format_exc() + "\n"
                 self.traceback_messages += traceback_message
                 self.error_messages += error_message
@@ -298,64 +227,6 @@ class ScenarioOutline(StepContainer):
                 
                 if continue_after_failure_flag is False:
                     self.__tear_down(scenario_context)
-
-    def __check_iterate_count(self):
-        if self.has_examples():
-            iterate_count = len(self.examples)
-            variable_count = len(self.examples[0])
-            for example in self.examples[1:]:
-                if len(example) != variable_count: raise Exception("Invalid examples count")
-
-            return iterate_count
-
-    def __update_step_kwargs(self, example_index):
-        snake_case_key_to_origin_key = {}
-        snake_case_keys = [key.replace(' ', '_') for key in self.examples[example_index].keys()]
-        for key in self.examples[example_index].keys():
-            snake_case_key_to_origin_key.update({key.replace(' ', '_'): key})
-
-        for sequential_group in self.sequential_groups:
-            for step in sequential_group.get_all_steps():
-                for step_key in step.kwargs.keys():
-                    if step_key in snake_case_keys:
-                        step.kwargs[step_key] = self.examples[example_index][snake_case_key_to_origin_key[step_key]]
-
-    def __record_example_execution_result(self, iterate_count):
-        self.example_execution_result[iterate_count] = {}
-        self.example_execution_result[iterate_count]["background"] = self.background_execution_result
-        self.example_execution_result[iterate_count]["execution_result"] = self.execution_result
-        self.example_execution_result[iterate_count]["execution_time"] = self.execution_time
-        self.example_execution_result[iterate_count]["error_messages"] = self.error_messages
-        self.example_execution_result[iterate_count]["traceback_messages"] = self.traceback_messages
-        self.example_execution_result[iterate_count]["steps"] = []
-        for sequential_group in self.sequential_groups:
-            for step in sequential_group.get_all_steps():
-                self.example_execution_result[iterate_count]["steps"].append(step)
-
-        if self.traceback_messages != "":
-            error_log = "\n\033[1;7m " + self.scenario_name + f" - Example #{iterate_count + 1} \033[0m\n" + self.error_log()
-            self.example_error_log += error_log
-
-        self.execution_result = Status.untested
-        self.execution_time = None
-        self.error_messages = ""
-        self.traceback_messages = ""
-
-    def __record_execution_result(self):
-        self.execution_time = 0
-        for _, result in self.example_execution_result.items():
-            if result["execution_result"] != Status.passed: self.execution_result = Status.failed
-            self.execution_time += result["execution_time"]
-        if self.execution_result != Status.failed: self.execution_result = Status.passed
-
-    def __replace_name_in_angle_brackets_to_example(self, step_description, iterate_count):
-        example_variables = re.findall(r"<(.*?)>", step_description)
-        if example_variables:
-            for variable in example_variables:
-                example = self.examples[iterate_count][variable].replace('\n', '\\n')
-                step_description = step_description.replace(f"<{variable}>", "\033[1m"+example+"\033[22m")
-        return step_description
     
     def error_log(self):
         return "\n\n" + self.traceback_messages + "\n\033[1;31mError(s) in the group:\n\n\033[0;31m" + self.error_messages + "\033[0m" if self.traceback_messages != "" else ""
-        

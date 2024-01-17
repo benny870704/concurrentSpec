@@ -35,8 +35,6 @@ class StepContainer:
         self.feature_name = FeatureManager.get_feature_name_from_class_name(class_name)
         if self.child_type != ChildType.Background: FeatureManager.add_scenario(self, class_name, method_name)
         else: FeatureManager.add_background(self, class_name)
-        if self.feature_name is not None:
-            self.step_definition_folder_path += self.__generate_feature_folder_name()
         
         os.makedirs(f"{self.step_definition_folder_path}", exist_ok = True)
 

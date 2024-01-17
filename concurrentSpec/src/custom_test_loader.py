@@ -1,5 +1,6 @@
 import os
 import sys
+import re
 import inspect
 import importlib
 import unittest
@@ -45,12 +46,15 @@ class CustomTestLoader(unittest.TestLoader):
     def find_test_modules(self, path):
         """Find all Python modules in the given directory tree that inherit unittest.TestCase."""
         test_modules = []
+        sys.path.append(os.getcwd())
+        os.chdir(os.getcwd())
         for dirpath, dirnames, filenames in os.walk(path):
             sys.path.append(os.path.abspath(dirpath))
             for filename in filenames:
-                if filename.endswith('.py'):
+                if filename.startswith('test') and filename.endswith('.py'):
                     module_name = os.path.splitext(filename)[0]
                     module_path = os.path.join(dirpath, module_name).replace('/', '.').replace('\\', '.')
+                    module_path = re.sub(r'^\.+', "", module_path)
                     try:
                         module = importlib.import_module(module_path)
                         for name, obj in inspect.getmembers(module):

@@ -1,8 +1,8 @@
 import re, sys
 import textwrap
+sys.path.append("../")
 from .data_table import DataTable
 from .status import Status
-sys.path.append("../")
 from .execute_state import ExecuteState
 
 class Step:
@@ -31,7 +31,6 @@ class Step:
     
     def __repr__(self):
         return f"({self.step} {self.description})"
-        # return f"(step = {self.step}, description = {self.description}, method_name = {self.method_name}, kwargs = {self.kwargs}, lead_step = {self.lead_step})"
 
     def __check_doc_string_and_data_table(self, doc_string, data_table):
         if data_table is not None:
