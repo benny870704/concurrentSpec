@@ -16,8 +16,11 @@ class RegisterConeC:
     def given_work_site_computer_w_is_operational(self):
         # print(f"WSC-> given_work_site_computer_w_is_operational")
         self.work_site_computer.start()
+    
+    def given_cone_c_is_not_yet_registered(self):
+        assert self.work_site_computer.check_sensor_cone_exists(self.uuid) is False
         
-    def when_a_registering_message_is_at_the_interface(self):
+    def when_a_registering_message_from_cone_c_is_at_the_interface(self):
         # print(f"WSC-> when_a_registering_message_is_at_the_interface_i_cw")
 
         startup_message = self.serial_client.generate_startup_message(self.uuid)
@@ -32,7 +35,7 @@ class RegisterConeC:
         assert SensorConeState.CONNECTED == self.work_site_computer.get_sensor_cone_state_by_uuid(self.uuid),\
             f"connected != {self.work_site_computer.get_sensor_cone_state_by_uuid(self.uuid)}"
 
-    def then_a_flashing_message_is_at_the_interface(self):
+    def then_a_flashing_message_from_work_site_computer_w_is_at_the_interface(self):
         # print(f"WSC-> then_a_flashing_message_is_at_the_interface_i_cw")
 
         self.work_site_computer.wait_all_messages_are_processed()

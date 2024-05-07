@@ -235,7 +235,7 @@ class SystemScenario:
             if step_node.name == "When" and when_flag is not True:
                 when_flag = True
                 self._bind_domain_environment_to_system_environment()   
-                self.__execute_all_internal_given_step()
+                # self.__execute_all_internal_given_step()
                 if self.error_log != "":
                     return
             
@@ -304,6 +304,13 @@ class SystemScenario:
         for selected_scenario in self.domain_name_and_scenario_name_tuple_to_selected_scenario.values():
             selected_scenario.get_scenario_context().__dict__ = system_data_members
 
+    def _bind_system_environment_to_domain_environment(self):
+        domain_data_members = {}
+        for selected_scenario in self.domain_name_and_scenario_name_tuple_to_selected_scenario.values():
+            domain_data_members = domain_data_members | selected_scenario.get_scenario_context().__dict__
+
+        self.system_context.__dict__ = self.system_context.__dict__ | domain_data_members
+
     def _get_all_scenario_context(self):
         all_scenario_context = {}
         all_scenario_context[("system", self.system_scenario_name)] = self.system_context
@@ -353,6 +360,7 @@ class SystemScenario:
                     
             steps = sequential_group.get_all_steps()
             self._mark_step_as_executed(steps, step_to_domain_name_and_sceanrio_name)
+            self._bind_system_environment_to_domain_environment()
     
     def _inject_doc_string_and_data_table_to_context(self, concurrent_steps):
         doc_string_count, data_table_count = 0, 0

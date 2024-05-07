@@ -14,7 +14,8 @@ class TestBehaviorOfWarningLight(unittest.TestCase):
         Scenario(scenario_name = "Warning light flashes")\
         \
         .Given("cone C is operational")\
-        .When("a flashing message is at the interface")\
+        .And("cone warning light is on")\
+        .When("a flashing message from work site computer W is at the interface")\
         .Then("cone warning light flashes")\
         .execute()
         

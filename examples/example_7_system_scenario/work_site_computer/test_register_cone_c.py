@@ -13,7 +13,8 @@ class TestRegisterConeC(unittest.TestCase):
         Scenario(scenario_name="Register cone C")\
         \
         .Given("work site computer W is operational")\
-        .When("a registering message is at the interface")\
+        .Given("cone C is not yet registered")\
+        .When("a registering message from cone C is at the interface")\
         .Then("cone C becomes registered in the work site computer W")\
-        .Then("a flashing message is at the interface")\
+        .Then("a flashing message from work site computer W is at the interface")\
         .execute()

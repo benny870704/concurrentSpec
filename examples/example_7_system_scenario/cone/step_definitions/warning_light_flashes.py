@@ -12,6 +12,9 @@ class WarningLightFlashes:
     def given_cone_c_is_operational(self):
         self.sensor_cone.turn_on()
 
+    def given_cone_warning_light_is_on(self):
+        pass
+
     def when_a_flashing_message_is_at_the_interface(self):
         flashing_message = self.serial_client.generate_flashing_message()
         self.serial_client.write(flashing_message)
@@ -21,4 +24,7 @@ class WarningLightFlashes:
 
     def tear_down(self):
         self.serial_client.close()
+
+    def when_a_flashing_message_from_work_site_computer_w_is_at_the_interface(self):
+        raise NotImplementedError("when_a_flashing_message_from_work_site_computer_w_is_at_the_interface")
 

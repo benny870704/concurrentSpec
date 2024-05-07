@@ -14,8 +14,11 @@ class TestTurnOnSensorCone(unittest.TestCase):
         Scenario(scenario_name="Turn on cone C")\
         \
         .Given("cone C is off")\
-        .When("the worker turns on cone C")\
+        .When("a worker turns on cone C at time T")\
+        .Then("the power-on reset of cone C is successful")\
+        .Then("the power-on self-test of cone C is successful")\
         .Then("cone C is operational")\
-        .Then("a registering message is at the interface")\
+        .And("cone warning light is on")\
+        .Then("a registering message from cone C is at the interface")\
         .execute()
     

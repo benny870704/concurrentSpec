@@ -248,5 +248,5 @@ As the example in the section [Scenario Usage](#scenario-usage), we want to veri
 
 ## System Scenario
 - Run Example: 
-  - `cd examples/example_7_system_scenario/system`
-  - `python3 -m unittest`
+    - Open the cmd, under the root folder `concurrentSpec` 
+    - `python3 -m unittest examples/example_7_system_scenario/system/test_turn_on_cone.py`

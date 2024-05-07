@@ -4,9 +4,11 @@ class SensorCone:
     def __init__(self, uuid: str, serial: MockSensorConeSerial):
         self.uuid = uuid
         self.serial = serial
+        self.light = False
 
     def turn_on(self):
         startup_message = self.serial.generate_startup_message(self.uuid)
+        self.light = True
         self.serial.write(startup_message)
 
     def send_acceleration_message(self, acceleration: tuple):
@@ -32,3 +34,6 @@ class SensorCone:
     
     def is_open(self):
         return self.serial.is_open()
+
+    def warning_light_is_on(self):
+        return self.light
